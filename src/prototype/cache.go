@@ -1,7 +1,10 @@
 package prototype
 
 import (
+	"encoding/gob"
 	"fmt"
+	"io"
+	"os"
 	"sync"
 	"time"
 )
@@ -26,6 +29,7 @@ type Cache struct {
 	watcher *watcher
 }
 
+// TODO monitor is required
 type watcher struct {
 }
 
@@ -34,7 +38,7 @@ type cache struct {
 	defaultClearExpiration time.Duration
 	items                  map[string]Item
 	mu                     sync.RWMutex
-	handleDel              func(string, interface{})
+	afterDel               func(string, interface{})
 }
 
 func (c *cache) set(key string, val interface{}, lastFor time.Duration) {
@@ -115,6 +119,144 @@ func (c *cache) incrby(key string, n int64) error {
 		item.Data = item.Data.(uint) + uint(n)
 	case uint16:
 		item.Data = item.Data.(uint16) + uint16(n)
+	case uint32:
+		item.Data = item.Data.(uint32) + uint32(n)
+	case float32:
+		item.Data = item.Data.(float32) + float32(n)
+	case float64:
+		item.Data = item.Data.(float64) + float64(n)
+	default:
+		return fmt.Errorf("cannot incre the value of %s", key)
+	}
+	c.items[key] = item
+	return nil
+}
+
+func (c *cache) incrfby(key string, n float64) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	item, found := c.find(key)
+	if !found {
+		return fmt.Errorf("item %s does not exist", key)
+	}
+	switch item.Data.(type) {
+	case float32:
+		item.Data = item.Data.(float32) + float32(n)
+	case float64:
+		item.Data = item.Data.(float64) + n
+	default:
+		fmt.Errorf("value of %s is not a float", key)
+	}
+	c.items[key] = item
+	return nil
+}
+
+func (c *cache) del(key string) {
+	c.mu.Lock()
+	val, hasHandler := c.doDel(key)
+	c.mu.Unlock()
+	if hasHandler {
+		c.afterDel(key, val)
+	}
+}
+
+func (c *cache) doDel(key string) (interface{}, bool) {
+	if c.afterDel != nil {
+		if item, found := c.find(key); found {
+			delete(c.items, key)
+			return item.Data, true
+		}
+	}
+	delete(c.items, key)
+	return nil, false
+}
+
+type kv struct {
+	key string
+	val interface{}
+}
+
+// delExpired can be called by user or cache itself
+func (c *cache) delExpired() {
+	var itemsWithHandler []kv
+	c.mu.Lock()
+	for k, v := range c.items {
+		if v.Expired() {
+			val, hasHandler := c.doDel(k)
+			if hasHandler {
+				itemsWithHandler = append(itemsWithHandler, kv{k, val})
+			}
+		}
+	}
+	c.mu.Unlock()
+	for _, item := range itemsWithHandler {
+		c.afterDel(item.key, item.val)
+	}
+}
+
+func (c *cache) saveFile(filename string) error {
+	file, err := os.Create(filename)
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	err = c.save(file)
+	if err != nil {
+		return err
 	}
 	return nil
+}
+
+func (c *cache) save(w io.Writer) (err error) {
+	enc := gob.NewEncoder(w)
+	defer func() {
+		if x := recover(); x != nil {
+			err = fmt.Errorf("error registering item types with gob")
+		}
+	}()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	for _, item := range c.items {
+		gob.Register(item.Data)
+	}
+	err = enc.Encode(&c.items)
+	return
+}
+
+func (c *cache) loadFile(filename string) error {
+	file, err := os.Open(filename)
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	err = c.load(file)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *cache) load(r io.Reader) error {
+	dec := gob.NewDecoder(r)
+	items := map[string]Item{}
+	err := dec.Decode(&items)
+	if err == nil {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		for k, v := range items {
+			_, found := c.find(k)
+			if !found {
+				c.items[k] = v
+			}
+		}
+	}
+	return err
 }

@@ -2,6 +2,7 @@
   <dictionary name="sjl66">
     <words>
       <w>incrby</w>
+      <w>incrfby</w>
       <w>setnx</w>
     </words>
   </dictionary>
