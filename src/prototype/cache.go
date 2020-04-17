@@ -5,13 +5,39 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"sync"
 	"time"
 )
 
 const (
+	// claim to use the defaultExpiration of cache
 	DefaultExpiration time.Duration = 0
 	NoExpiration      time.Duration = -1
+)
+
+const (
+	MinUint   = uint(0)
+	MaxUint   = ^uint(0)
+	MinUint8  = uint8(0)
+	MaxUint8  = ^uint8(0)
+	MinUint16 = uint16(0)
+	MaxUint16 = ^uint16(0)
+	MinUint32 = uint32(0)
+	MaxUint32 = ^uint32(0)
+	MinUint64 = uint64(0)
+	MaxUint64 = ^uint64(0)
+
+	MaxInt   = int(^uint(0) >> 1)
+	MinInt   = ^MaxInt
+	MaxInt8  = int8(^uint8(0) >> 1)
+	MinInt8  = ^MaxInt8
+	MaxInt16 = int16(^uint16(0) >> 1)
+	MinInt16 = ^MaxInt16
+	MaxInt32 = int32(^uint32(0) >> 1)
+	MinInt32 = ^MaxInt32
+	MaxInt64 = int64(^uint64(0) >> 1)
+	MinInt64 = ^MaxInt64
 )
 
 type Item struct {
@@ -24,21 +50,31 @@ func (item Item) Expired() bool {
 		time.Now().UnixNano() > item.Expiration
 }
 
-type Cache struct {
-	cache   *cache
-	watcher *watcher
-}
-
-// TODO monitor is required
-type watcher struct {
-}
-
 type cache struct {
-	defaultExpiration      time.Duration
-	defaultClearExpiration time.Duration
-	items                  map[string]Item
-	mu                     sync.RWMutex
-	afterDel               func(string, interface{})
+	defaultExpiration time.Duration
+	items             map[string]Item
+	mu                sync.RWMutex
+	afterDel          func(string, interface{})
+}
+
+func newCache(de time.Duration, m map[string]Item) *cache {
+	if de < 0 {
+		de = NoExpiration
+	}
+	if m == nil {
+		m = make(map[string]Item)
+	}
+	c := &cache{
+		defaultExpiration: de,
+		items:             m,
+	}
+	return c
+}
+
+func (c *cache) addDelHandler(f func(string, interface{})) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.afterDel = f
 }
 
 func (c *cache) set(key string, val interface{}, lastFor time.Duration) {
@@ -109,6 +145,8 @@ func (c *cache) incrby(key string, n int64) error {
 	switch item.Data.(type) {
 	case int:
 		item.Data = item.Data.(int) + int(n)
+	case int8:
+		item.Data = item.Data.(int8) + int8(n)
 	case int16:
 		item.Data = item.Data.(int16) + int16(n)
 	case int32:
@@ -259,4 +297,32 @@ func (c *cache) load(r io.Reader) error {
 		}
 	}
 	return err
+}
+
+func (c *cache) keys(exp string) ([]interface{}, error) {
+	reg, err := regexp.Compile(exp)
+	if err != nil {
+		return nil, err
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	res := make([]interface{}, 0)
+	for k, v := range c.items {
+		if reg.Match([]byte(k)) {
+			res = append(res, v)
+		}
+	}
+	return res, nil
+}
+
+func (c *cache) cnt() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.items)
+}
+
+func (c *cache) cls() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.items = map[string]Item{}
 }

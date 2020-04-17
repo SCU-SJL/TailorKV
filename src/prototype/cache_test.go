@@ -24,3 +24,35 @@ func TestCache_Ttl(t *testing.T) {
 	ex, _ := c.ttl("ttl")
 	fmt.Println(ex)
 }
+
+func TestCache_Save(t *testing.T) {
+	c.set("name", "shaojiale", DefaultExpiration)
+	c.set("id", "2017141461144", DefaultExpiration)
+	err := c.saveFile("data.txt")
+	if err != nil {
+		t.Errorf("save failed: %v", err)
+	}
+}
+
+func TestCache_Load(t *testing.T) {
+	c.loadFile("data.txt")
+	keys := []string{"name", "id"}
+	for _, key := range keys {
+		if _, ok := c.get(key); !ok {
+			t.Errorf("key[%s] is not loaded", key)
+		}
+	}
+	if _, ok := c.get("ttl"); ok {
+		t.Errorf("key[%s] should be expired", keys)
+	}
+}
+
+func TestCache_Keys(t *testing.T) {
+	c.set("hello", "world", DefaultExpiration)
+	c.set("name", "shaojiale", DefaultExpiration)
+	res, err := c.keys("[lome]+")
+	if err != nil {
+		t.Errorf("test func keys failed: %v", err)
+	}
+	fmt.Println(res)
+}

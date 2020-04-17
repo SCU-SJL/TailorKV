@@ -3,6 +3,7 @@
     <words>
       <w>incrby</w>
       <w>incrfby</w>
+      <w>setex</w>
       <w>setnx</w>
     </words>
   </dictionary>
