@@ -17,14 +17,6 @@ func TestCache_Find(t *testing.T) {
 	}
 }
 
-func TestCache_Ttl(t *testing.T) {
-	fmt.Println("cur: ", time.Now())
-	c.set("ttl", "5s", 5*time.Second)
-	time.Sleep(5 * time.Second)
-	ex, _ := c.ttl("ttl")
-	fmt.Println(ex)
-}
-
 func TestCache_Save(t *testing.T) {
 	c.set("name", "shaojiale", DefaultExpiration)
 	c.set("id", "2017141461144", DefaultExpiration)
