@@ -19,4 +19,6 @@
   + Only one mutex is used to synchronizing the ```cache```, which is not efficient enough.
   + All the ```data structures``` are from ```Go SDK```, I need to do some improvements according to the actual situation.
   + ```Persistence``` needs to be improved.
+  + build a terminal for godis
+  + ...
   
