@@ -28,6 +28,7 @@ func TestCache_Incr(t *testing.T) {
 	cache_.Set("num3", int8(3))
 	cache_.Set("num4", int32(4))
 	cache_.Set("num5", int64(5))
+	cache_.Set("num6", int8(0))
 	if err := cache_.Incr("num1"); err != nil {
 		t.Errorf("num1 failed: %v", err)
 	}
@@ -43,6 +44,16 @@ func TestCache_Incr(t *testing.T) {
 	if err := cache_.Incr("num5"); err != nil {
 		t.Errorf("num5 failed: %v", err)
 	}
+	if err := cache_.Incrby("num6", -10000); err != nil {
+		t.Errorf("num6 failed: %v", err)
+	}
 	fmt.Println(cache_.Get("num1"), cache_.Get("num2"), cache_.Get("num3"),
-		cache_.Get("num4"), cache_.Get("num5"))
+		cache_.Get("num4"), cache_.Get("num5"), cache_.Get("num6"))
+	fmt.Printf("%T", cache_.Get("num6"))
+}
+
+func TestCache_Ttl(t *testing.T) {
+	cache_.Setex("name", "sjl", 2*time.Second)
+	time.Sleep(2 * time.Second)
+	fmt.Println(cache_.Ttl("name"))
 }
