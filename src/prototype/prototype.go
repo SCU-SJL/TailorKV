@@ -69,3 +69,7 @@ func (c *Cache) Incrby(key string, n int64) error {
 func (c *Cache) Incrfby(key string, f float64) error {
 	return c.cache.incrfby(key, f)
 }
+
+func (c *Cache) Ttl(key string) (time.Duration, bool) {
+	return c.cache.ttl(key)
+}

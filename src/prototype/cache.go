@@ -125,14 +125,14 @@ func (c *cache) get(key string) (interface{}, bool) {
 	return item.Data, true
 }
 
-func (c *cache) ttl(key string) (time.Time, bool) {
+func (c *cache) ttl(key string) (time.Duration, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	item, found := c.find(key)
 	if !found {
-		return time.Time{}, false
+		return time.Duration(0), false
 	}
-	return time.Unix(0, item.Expiration), true
+	return time.Unix(0, item.Expiration).Sub(time.Now()), true
 }
 
 func (c *cache) incrby(key string, n int64) error {
