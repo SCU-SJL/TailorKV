@@ -301,7 +301,7 @@ func (c *cache) saveFile(filename string) error {
 	file, err := os.Create(filename)
 	defer func() {
 		if file != nil {
-			file.Close()
+			_ = file.Close()
 		}
 	}()
 	if err != nil {
@@ -334,7 +334,7 @@ func (c *cache) loadFile(filename string) error {
 	file, err := os.Open(filename)
 	defer func() {
 		if file != nil {
-			file.Close()
+			_ = file.Close()
 		}
 	}()
 	if err != nil {
