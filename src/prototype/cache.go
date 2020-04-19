@@ -51,13 +51,6 @@ const (
 	MinInt64 = ^MaxInt64
 )
 
-var (
-	MaxValues = []interface{}{MaxUint, MaxUint8, MaxUint16, MaxUint32, MaxUint64,
-		MaxInt, MaxInt8, MaxInt16, MaxInt32, MaxInt64}
-	MinValues = []interface{}{MinUint, MinUint8, MinUint16, MinUint32, MinUint64,
-		MinInt, MinInt8, MinInt16, MinInt32, MinInt64}
-)
-
 type Item struct {
 	Data       interface{}
 	Expiration int64
