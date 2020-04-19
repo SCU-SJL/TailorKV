@@ -93,9 +93,22 @@ func TestCache_Incr_Border(t *testing.T) {
 }
 
 func TestCache_Ttl(t *testing.T) {
-	c.Setex("name", "sjl", 2*time.Second)
-	time.Sleep(2 * time.Second)
-	fmt.Println(c.Ttl("name"))
+	c.Setex("name", "sjl", 200*time.Millisecond)
+	time.Sleep(1 * time.Second)
+	_, exist := c.Ttl("name")
+	if exist {
+		t.Errorf("ttl failed, a key is not expired")
+	}
+
+	c.Setex("id", "2017141461144", 50*time.Second)
+	time.Sleep(1 * time.Second)
+	ttl, exist := c.Ttl("id")
+	if !exist {
+		t.Errorf("ttl failed, a key is expired advancedly")
+	}
+	if ttl > 49*time.Second || ttl < 48*time.Second {
+		t.Errorf("ttl failed, expected: 48~49s, actual:%v", ttl)
+	}
 }
 
 func TestCache_Cleaner(t *testing.T) {
