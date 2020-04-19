@@ -6,54 +6,94 @@ import (
 	"time"
 )
 
-var cache_ = NewCache(NoExpiration, nil)
+var c = NewCache(NoExpiration, nil)
 
 func TestCache_AddDelHandler(t *testing.T) {
 	f := func(key string, val interface{}) {
 		fmt.Println("del ", key, " with value of ", val)
 	}
-	cache_.AddDelHandler(f)
-	cache_.Set("name", "SJL")
-	cache_.Setex("id", "2017141461144", 5*time.Second)
-	cache_.Del("name")
-	cache_.Del("id")
-	if cache_.Get("name") != nil || cache_.Get("id") != nil {
+	c.AddDelHandler(f)
+	c.Set("name", "SJL")
+	c.Setex("id", "2017141461144", 5*time.Second)
+	c.Del("name")
+	c.Del("id")
+	if c.Get("name") != nil || c.Get("id") != nil {
 		t.Errorf("item name or id is not deleted")
 	}
 }
 
 func TestCache_Incr(t *testing.T) {
-	cache_.Set("num1", 1)
-	cache_.Set("num2", int16(2))
-	cache_.Set("num3", int8(3))
-	cache_.Set("num4", int32(4))
-	cache_.Set("num5", int64(5))
-	cache_.Set("num6", int8(0))
-	if err := cache_.Incr("num1"); err != nil {
+	c.Set("num1", 1) //int
+	c.Set("num2", int16(2))
+	c.Set("num3", int8(3))
+	c.Set("num4", int32(4))
+	c.Set("num5", int64(5))
+	c.Set("num6", uint(123))
+	c.Set("num7", uint8(12))
+	c.Set("num8", uint16(123))
+	c.Set("num9", uint32(123))
+	c.Set("num10", uint64(123))
+	if err := c.Incr("num1"); err != nil {
 		t.Errorf("num1 failed: %v", err)
 	}
-	if err := cache_.Incr("num2"); err != nil {
+	if err := c.Incr("num2"); err != nil {
 		t.Errorf("num2 failed: %v", err)
 	}
-	if err := cache_.Incr("num3"); err != nil {
+	if err := c.Incr("num3"); err != nil {
 		t.Errorf("num3 failed: %v", err)
 	}
-	if err := cache_.Incr("num4"); err != nil {
+	if err := c.Incr("num4"); err != nil {
 		t.Errorf("num4 failed: %v", err)
 	}
-	if err := cache_.Incr("num5"); err != nil {
+	if err := c.Incr("num5"); err != nil {
 		t.Errorf("num5 failed: %v", err)
 	}
-	if err := cache_.Incrby("num6", -10000); err != nil {
+	if err := c.Incr("num6"); err != nil {
 		t.Errorf("num6 failed: %v", err)
 	}
-	fmt.Println(cache_.Get("num1"), cache_.Get("num2"), cache_.Get("num3"),
-		cache_.Get("num4"), cache_.Get("num5"), cache_.Get("num6"))
-	fmt.Printf("%T", cache_.Get("num6"))
+	if err := c.Incr("num7"); err != nil {
+		t.Errorf("num7 failed: %v", err)
+	}
+	if err := c.Incr("num8"); err != nil {
+		t.Errorf("num8 failed: %v", err)
+	}
+	if err := c.Incr("num9"); err != nil {
+		t.Errorf("num9 failed: %v", err)
+	}
+	if err := c.Incr("num10"); err != nil {
+		t.Errorf("num10 failed: %v", err)
+	}
+}
+
+func TestCache_Incr_Border(t *testing.T) {
+	keys := []string{"MinInt", "MinInt8", "MinInt16", "MinInt32", "MinInt64",
+		"MaxUint", "MaxUint8", "MaxUint16", "MaxUint32", "MaxUint64"}
+	vals := []interface{}{MinInt, MinInt8, MinInt16, MinInt32, MinInt64,
+		MaxUint, MaxUint8, MaxUint16, MaxUint32, MaxUint64}
+	for i := range keys {
+		c.Set(keys[i], vals[i])
+	}
+	for i := 0; i < 5; i++ {
+		if err := c.Incrby(keys[i], "-1"); err == nil {
+			t.Errorf("key[%s] failed", keys[i])
+		}
+	}
+	for i := 5; i < 10; i++ {
+		if err := c.Incr(keys[i]); err == nil {
+			t.Errorf("key[%s] failed", keys[i])
+		}
+	}
+	//Kvs, err := c.Keys("[A-z]*")
+	//if err != nil {
+	//	t.Errorf("keys failedL %v", err)
+	//}
+	//for _, kv := range Kvs {
+	//	fmt.Printf("key: %s val: %v\n", kv.Key(), kv.Val())
+	//}
 }
 
 func TestCache_Ttl(t *testing.T) {
-	cache_.Setex("name", "sjl", 2*time.Second)
+	c.Setex("name", "sjl", 2*time.Second)
 	time.Sleep(2 * time.Second)
-	fmt.Println(cache_.Ttl("name"))
+	fmt.Println(c.Ttl("name"))
 }
