@@ -1,6 +1,9 @@
 package prototype
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 type Cache struct {
 	cache   *cache
@@ -58,16 +61,24 @@ func (c *Cache) Del(key string) {
 	c.cache.del(key)
 }
 
+func (c *Cache) DelExp() {
+	c.cache.delExpired()
+}
+
 func (c *Cache) Incr(key string) error {
 	return c.cache.incrby(key, 1)
 }
 
-func (c *Cache) Incrby(key string, n int64) error {
+func (c *Cache) Incrby(key string, s string) error {
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return err
+	}
 	return c.cache.incrby(key, n)
 }
 
-func (c *Cache) Incrfby(key string, f float64) error {
-	return c.cache.incrfby(key, f)
+func (c *Cache) Keys(exp string) ([]KV, error) {
+	return c.cache.keys(exp)
 }
 
 func (c *Cache) Ttl(key string) (time.Duration, bool) {

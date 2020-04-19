@@ -17,6 +17,17 @@ const (
 )
 
 const (
+	Uint = iota
+	Uint8
+	Uint16
+	Uint32
+	Uint64
+	Int
+	Int8
+	Int16
+	Int32
+	Int64
+
 	MinUint   = uint(0)
 	MaxUint   = ^uint(0)
 	MinUint8  = uint8(0)
@@ -38,6 +49,13 @@ const (
 	MinInt32 = ^MaxInt32
 	MaxInt64 = int64(^uint64(0) >> 1)
 	MinInt64 = ^MaxInt64
+)
+
+var (
+	MaxValues = []interface{}{MaxUint, MaxUint8, MaxUint16, MaxUint32, MaxUint64,
+		MaxInt, MaxInt8, MaxInt16, MaxInt32, MaxInt64}
+	MinValues = []interface{}{MinUint, MinUint8, MinUint16, MinUint32, MinUint64,
+		MinInt, MinInt8, MinInt16, MinInt32, MinInt64}
 )
 
 type Item struct {
@@ -144,25 +162,58 @@ func (c *cache) incrby(key string, n int64) error {
 	}
 	switch item.Data.(type) {
 	case int:
+		if overflowed(Int, int64(item.Data.(int)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
 		item.Data = item.Data.(int) + int(n)
 	case int8:
+		if overflowed(Int8, int64(item.Data.(int8)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
 		item.Data = item.Data.(int8) + int8(n)
 	case int16:
+		if overflowed(Int16, int64(item.Data.(int16)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
 		item.Data = item.Data.(int16) + int16(n)
 	case int32:
+		if overflowed(Int32, int64(item.Data.(int32)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
 		item.Data = item.Data.(int32) + int32(n)
 	case int64:
+		if overflowed(Int64, int64(item.Data.(int64)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
 		item.Data = item.Data.(int64) + n
 	case uint:
+		if overflowed(Uint, int64(item.Data.(uint)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
 		item.Data = item.Data.(uint) + uint(n)
+	case uint8:
+		if overflowed(Uint8, int64(item.Data.(uint8)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
+		item.Data = item.Data.(uint8) + uint8(n)
 	case uint16:
+		if overflowed(Uint16, int64(item.Data.(uint16)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
 		item.Data = item.Data.(uint16) + uint16(n)
 	case uint32:
+		if overflowed(Uint32, int64(item.Data.(uint32)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
 		item.Data = item.Data.(uint32) + uint32(n)
+	case uint64:
+		if overflowed(Uint64, int64(item.Data.(uint64)), n) {
+			return fmt.Errorf("incr overflowed")
+		}
+		item.Data = item.Data.(uint64) + uint64(n)
 	case float32:
-		item.Data = item.Data.(float32) + float32(n)
 	case float64:
-		item.Data = item.Data.(float64) + float64(n)
+		return fmt.Errorf("cannot incr a float")
 	default:
 		return fmt.Errorf("cannot incre the value of %s", key)
 	}
@@ -170,23 +221,36 @@ func (c *cache) incrby(key string, n int64) error {
 	return nil
 }
 
-func (c *cache) incrfby(key string, n float64) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	item, found := c.find(key)
-	if !found {
-		return fmt.Errorf("item %s does not exist", key)
-	}
-	switch item.Data.(type) {
-	case float32:
-		item.Data = item.Data.(float32) + float32(n)
-	case float64:
-		item.Data = item.Data.(float64) + n
+func overflowed(tp int, left, right int64) bool {
+	switch tp {
+	case Uint:
+		return (right > 0 && uint64(left) > uint64(MaxUint)-uint64(right)) || (right < 0)
+	case Uint8:
+		return (right > 0 && left > int64(MaxUint8)-right) || (right < 0)
+	case Uint16:
+		return (right > 0 && left > int64(MaxUint16)-right) || (right < 0)
+	case Uint32:
+		return (right > 0 && left > int64(MaxUint32)-right) || (right < 0)
+	case Uint64:
+		return (right > 0 && uint64(left) > MaxUint64-uint64(right)) || (right < 0)
+	case Int:
+		return (right > 0 && left > int64(MaxInt)-right) ||
+			(right < 0 && left < int64(MinInt)-right)
+	case Int8:
+		return (right > 0 && left > int64(MaxInt8)-right) ||
+			(right < 0 && left < int64(MinInt8)-right)
+	case Int16:
+		return (right > 0 && left > int64(MaxInt16)-right) ||
+			(right < 0 && left < int64(MinInt16)-right)
+	case Int32:
+		return (right > 0 && left > int64(MaxInt32)-right) ||
+			(right < 0 && left < int64(MinInt32)-right)
+	case Int64:
+		return (right > 0 && left > MaxInt64-right) ||
+			(right < 0 && left < MinInt64-right)
 	default:
-		fmt.Errorf("value of %s is not a float", key)
+		return true
 	}
-	c.items[key] = item
-	return nil
 }
 
 func (c *cache) del(key string) {
@@ -209,20 +273,28 @@ func (c *cache) doDel(key string) (interface{}, bool) {
 	return nil, false
 }
 
-type kv struct {
+type KV struct {
 	key string
 	val interface{}
 }
 
+func (kv *KV) Key() string {
+	return kv.key
+}
+
+func (kv *KV) Val() interface{} {
+	return kv.val
+}
+
 // delExpired can be called by user or cache itself
 func (c *cache) delExpired() {
-	var itemsWithHandler []kv
+	var itemsWithHandler []KV
 	c.mu.Lock()
 	for k, v := range c.items {
 		if v.Expired() {
 			val, hasHandler := c.doDel(k)
 			if hasHandler {
-				itemsWithHandler = append(itemsWithHandler, kv{k, val})
+				itemsWithHandler = append(itemsWithHandler, KV{k, val})
 			}
 		}
 	}
@@ -299,17 +371,17 @@ func (c *cache) load(r io.Reader) error {
 	return err
 }
 
-func (c *cache) keys(exp string) ([]interface{}, error) {
+func (c *cache) keys(exp string) ([]KV, error) {
 	reg, err := regexp.Compile(exp)
 	if err != nil {
 		return nil, err
 	}
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	res := make([]interface{}, 0)
+	res := make([]KV, 0)
 	for k, v := range c.items {
 		if reg.Match([]byte(k)) {
-			res = append(res, v)
+			res = append(res, KV{k, v})
 		}
 	}
 	return res, nil
