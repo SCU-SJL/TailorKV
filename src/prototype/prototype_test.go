@@ -97,3 +97,19 @@ func TestCache_Ttl(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	fmt.Println(c.Ttl("name"))
 }
+
+func TestCache_Cleaner(t *testing.T) {
+	keys := []string{"t500ms", "t1000s", "t1500ms", "t2000ms"}
+	c.AddDelHandler(func(key string, val interface{}) {
+		fmt.Println("key:", key, "val:", val, " expired!")
+	})
+	for i, k := range keys {
+		n := 500 * i
+		c.Setex(k, k, time.Duration(n)*time.Millisecond)
+	}
+	wait := time.After(3 * time.Second)
+	<-wait
+	if len(c.cache.items) == 4 {
+		t.Errorf("daemon cleaner went wrong")
+	}
+}

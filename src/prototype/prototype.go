@@ -8,13 +8,41 @@ import (
 type Cache struct {
 	cache   *cache
 	watcher *watcher
+	cleaner *cleaner
+}
+
+type cleaner struct {
+	interval time.Duration
+	stop     chan bool
+	clean    func(*cache)
+}
+
+func (cl *cleaner) run(c *cache) {
+	ticker := time.Tick(cl.interval)
+	for {
+		select {
+		case <-ticker:
+			cl.clean(c)
+		case <-cl.stop:
+			return
+		}
+	}
 }
 
 func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
 	c := newCache(defaultExpiration, m)
-	C := &Cache{
-		cache: c,
+	cl := &cleaner{
+		interval: 1 * time.Second,
+		stop:     make(chan bool),
+		clean: func(c *cache) {
+			c.delExpired()
+		},
 	}
+	C := &Cache{
+		cache:   c,
+		cleaner: cl,
+	}
+	go cl.run(c)
 	return C
 }
 
@@ -28,7 +56,7 @@ func (c *Cache) StopWatching() {
 	c.watcher.stop <- true
 }
 
-func (c *Cache) StartWatching(t time.Duration) {
+func (c *Cache) StartWatching() {
 	go c.watcher.run(c)
 }
 
@@ -61,10 +89,6 @@ func (c *Cache) Del(key string) {
 	c.cache.del(key)
 }
 
-func (c *Cache) DelExp() {
-	c.cache.delExpired()
-}
-
 func (c *Cache) Incr(key string) error {
 	return c.cache.incrby(key, 1)
 }
@@ -83,4 +107,12 @@ func (c *Cache) Keys(exp string) ([]KV, error) {
 
 func (c *Cache) Ttl(key string) (time.Duration, bool) {
 	return c.cache.ttl(key)
+}
+
+func (c *Cache) Save(filename string) error {
+	return c.cache.saveFile(filename)
+}
+
+func (c *Cache) Load(filename string) error {
+	return c.cache.loadFile(filename)
 }

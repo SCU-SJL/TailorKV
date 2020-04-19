@@ -64,7 +64,7 @@ type Item struct {
 }
 
 func (item Item) Expired() bool {
-	return item.Expiration > 0 &&
+	return item.Expiration >= 0 &&
 		time.Now().UnixNano() > item.Expiration
 }
 
@@ -98,10 +98,15 @@ func (c *cache) addDelHandler(f func(string, interface{})) {
 func (c *cache) set(key string, val interface{}, lastFor time.Duration) {
 	var ex int64
 	if lastFor == DefaultExpiration {
-		lastFor = c.defaultExpiration
-	}
-	if lastFor > 0 {
+		if c.defaultExpiration > 0 {
+			ex = time.Now().Add(c.defaultExpiration).UnixNano()
+		} else {
+			ex = -1
+		}
+	} else if lastFor > 0 {
 		ex = time.Now().Add(lastFor).UnixNano()
+	} else {
+		ex = -1
 	}
 	c.mu.Lock()
 	// it seems that 'defer' adds ~200ns (saw on github)
@@ -264,7 +269,7 @@ func (c *cache) del(key string) {
 
 func (c *cache) doDel(key string) (interface{}, bool) {
 	if c.afterDel != nil {
-		if item, found := c.find(key); found {
+		if item, found := c.items[key]; found {
 			delete(c.items, key)
 			return item.Data, true
 		}
