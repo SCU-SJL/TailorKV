@@ -28,15 +28,10 @@ const (
 	Int32
 	Int64
 
-	MinUint   = uint(0)
 	MaxUint   = ^uint(0)
-	MinUint8  = uint8(0)
 	MaxUint8  = ^uint8(0)
-	MinUint16 = uint16(0)
 	MaxUint16 = ^uint16(0)
-	MinUint32 = uint32(0)
 	MaxUint32 = ^uint32(0)
-	MinUint64 = uint64(0)
 	MaxUint64 = ^uint64(0)
 
 	MaxInt   = int(^uint(0) >> 1)
