@@ -1,4 +1,4 @@
-package prototype
+package tailor
 
 import "time"
 
