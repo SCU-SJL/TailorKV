@@ -7,21 +7,30 @@ import (
 )
 
 type Cache struct {
-	cache   *cache
+	neCache *cache
+	exCache *cache
 	watcher *watcher
 	cleaner *cleaner
 	watchMu sync.Mutex
 }
 
 func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
-	c := newCache(defaultExpiration, m)
-	cl := defaultCleaner(1 * time.Second)
+	var exc *cache
+	nec := newCache(defaultExpiration, m)
+	if defaultExpiration < 0 {
+		exc = newCache(defaultExpiration, m)
+	} else {
+		exc = nec
+	}
+	// clean expired data twice each second
+	cl := defaultCleaner(500 * time.Millisecond)
 	C := &Cache{
-		cache:   c,
+		neCache: nec,
+		exCache: exc,
 		cleaner: cl,
 		watcher: nil,
 	}
-	go cl.run(c)
+	go cl.run(exc)
 	return C
 }
 
@@ -48,36 +57,41 @@ func (c *Cache) StartWatching() {
 }
 
 func (c *Cache) AddDelHandler(f func(key string, val interface{})) {
-	c.cache.addDelHandler(f)
+	c.neCache.addDelHandler(f)
+	c.exCache.addDelHandler(f)
 }
 
 func (c *Cache) Set(key string, val interface{}) {
-	c.cache.set(key, val, DefaultExpiration)
+	c.neCache.set(key, val, DefaultExpiration)
 }
 
 func (c *Cache) Setnx(key string, val interface{}) bool {
-	err := c.cache.setnx(key, val, DefaultExpiration)
+	err := c.neCache.setnx(key, val, DefaultExpiration)
 	return err == nil
 }
 
 func (c *Cache) Setex(key string, val interface{}, t time.Duration) {
-	c.cache.set(key, val, t)
+	c.exCache.set(key, val, t)
 }
 
 func (c *Cache) Get(key string) interface{} {
-	val, ok := c.cache.get(key)
-	if !ok {
-		return nil
+	val, ok := c.neCache.get(key)
+	if ok {
+		return val
 	}
-	return val
+	val, ok = c.exCache.get(key)
+	if ok {
+		return val
+	}
+	return nil
 }
 
 func (c *Cache) Del(key string) {
-	c.cache.del(key)
+	c.neCache.del(key)
 }
 
 func (c *Cache) Incr(key string) error {
-	return c.cache.incrby(key, 1)
+	return c.neCache.incrby(key, 1)
 }
 
 func (c *Cache) Incrby(key string, s string) error {
@@ -85,21 +99,21 @@ func (c *Cache) Incrby(key string, s string) error {
 	if err != nil {
 		return err
 	}
-	return c.cache.incrby(key, n)
+	return c.neCache.incrby(key, n)
 }
 
 func (c *Cache) Keys(exp string) ([]KV, error) {
-	return c.cache.keys(exp)
+	return c.neCache.keys(exp)
 }
 
 func (c *Cache) Ttl(key string) (time.Duration, bool) {
-	return c.cache.ttl(key)
+	return c.neCache.ttl(key)
 }
 
 func (c *Cache) Save(filename string) error {
-	return c.cache.saveFile(filename)
+	return c.neCache.saveFile(filename)
 }
 
 func (c *Cache) Load(filename string) error {
-	return c.cache.loadFile(filename)
+	return c.neCache.loadFile(filename)
 }

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	// claim to use the defaultExpiration of cache
+	// claim to use the defaultExpiration of neCache
 	DefaultExpiration time.Duration = 0
 	NoExpiration      time.Duration = -1
 )
@@ -279,22 +279,38 @@ func (kv *KV) Val() interface{} {
 	return kv.val
 }
 
-// delExpired can be called by user or cache itself
 func (c *cache) delExpired() {
-	var itemsWithHandler []KV
 	c.mu.Lock()
-	for k, v := range c.items {
-		if v.Expired() {
-			val, hasHandler := c.doDel(k)
-			if hasHandler {
-				itemsWithHandler = append(itemsWithHandler, KV{k, val})
+	var itemsWithHandler []KV
+	ticker := time.After(100 * time.Millisecond)
+loop:
+	for {
+		select {
+		case <-ticker:
+			break loop
+		default:
+			count := 0
+			for k, v := range c.items {
+				count++
+				if v.Expired() {
+					val, hasHandler := c.doDel(k)
+					if hasHandler {
+						itemsWithHandler = append(itemsWithHandler, KV{k, val})
+					}
+				}
+				if count > 4 {
+					break
+				}
 			}
 		}
 	}
 	c.mu.Unlock()
-	for _, item := range itemsWithHandler {
-		c.afterDel(item.key, item.val)
-	}
+
+	go func() {
+		for _, item := range itemsWithHandler {
+			c.afterDel(item.key, item.val)
+		}
+	}()
 }
 
 func (c *cache) saveFile(filename string) error {
