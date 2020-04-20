@@ -4,4 +4,4 @@
   + Timed scan + Greedy strategy
 + ##### Better delete strategy
   + Lazy free
-  + Asyn delete
+  + Async delete
