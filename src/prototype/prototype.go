@@ -2,6 +2,7 @@ package prototype
 
 import (
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -9,51 +10,37 @@ type Cache struct {
 	cache   *cache
 	watcher *watcher
 	cleaner *cleaner
-}
-
-type cleaner struct {
-	interval time.Duration
-	stop     chan bool
-	clean    func(*cache)
-}
-
-func (cl *cleaner) run(c *cache) {
-	ticker := time.Tick(cl.interval)
-	for {
-		select {
-		case <-ticker:
-			cl.clean(c)
-		case <-cl.stop:
-			return
-		}
-	}
+	watchMu sync.Mutex
 }
 
 func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
 	c := newCache(defaultExpiration, m)
-	cl := &cleaner{
-		interval: 1 * time.Second,
-		stop:     make(chan bool),
-		clean: func(c *cache) {
-			c.delExpired()
-		},
-	}
+	cl := defaultCleaner(1 * time.Second)
 	C := &Cache{
 		cache:   c,
 		cleaner: cl,
+		watcher: nil,
 	}
 	go cl.run(c)
 	return C
 }
 
 func (c *Cache) ReplaceDaemonOp(wi time.Duration, f func(*Cache)) {
-	c.StopWatching()
-	c.watcher.interval = wi
-	c.watcher.op = f
+	c.watchMu.Lock()
+	defer c.watchMu.Unlock()
+	if c.watcher != nil {
+		c.StopWatching()
+		c.watcher.interval = wi
+		c.watcher.op = f
+	} else {
+		c.watcher = newWatcher(wi, f)
+	}
+	c.StartWatching()
 }
 
 func (c *Cache) StopWatching() {
 	c.watcher.stop <- true
+	time.Sleep(100 * time.Millisecond)
 }
 
 func (c *Cache) StartWatching() {
