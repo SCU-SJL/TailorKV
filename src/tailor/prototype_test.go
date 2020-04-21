@@ -57,3 +57,30 @@ func TestCache_Unlink(t *testing.T) {
 		t.Errorf("async queue is not empty")
 	}
 }
+
+func TestCache_Watching(t *testing.T) {
+	op := func(c *Cache) {
+		fmt.Println("daemon report: len = ", c.Cnt())
+	}
+	c.ReplaceDaemonOp(1*time.Second, op)
+	go func() {
+		for i := 0; i < len(keys); i++ {
+			c.Set(keys[i], vals[i])
+		}
+	}()
+	go func() {
+		c.Set("k11", 11)
+		c.Set("k22", 22)
+		c.Set("k33", 33)
+	}()
+	<-time.After(5 * time.Second)
+	c.StopWatching()
+
+	fmt.Println("stop for 2s")
+	<-time.After(2 * time.Second)
+
+	fmt.Println("start watching now")
+	c.StartWatching()
+
+	<-time.After(5 * time.Second)
+}
