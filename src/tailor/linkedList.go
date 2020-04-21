@@ -104,8 +104,10 @@ func (list *LinkedList) RemoveFirst() (interface{}, error) {
 		return nil, err
 	}
 	res := list.head
-	list.head = res.next
-	list.head.prev = nil
+	list.head = list.head.next
+	if list.head != nil {
+		list.head.prev = nil
+	}
 	list.size--
 	return res.data, nil
 }
@@ -118,7 +120,9 @@ func (list *LinkedList) RemoveLast() (interface{}, error) {
 	}
 	res := list.tail
 	list.tail = res.prev
-	list.tail.next = nil
+	if list.tail != nil {
+		list.tail.next = nil
+	}
 	list.size--
 	return res.data, nil
 }
