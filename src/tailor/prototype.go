@@ -1,17 +1,19 @@
 package tailor
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
 )
 
 type Cache struct {
-	neCache *cache
-	exCache *cache
-	watcher *watcher
-	cleaner *cleaner
-	watchMu sync.Mutex
+	neCache  *cache
+	exCache  *cache
+	watcher  *watcher
+	cleaner  *cleaner
+	watchMu  sync.Mutex
+	wStopped bool
 }
 
 func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
@@ -25,35 +27,74 @@ func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
 	// clean expired data twice each second
 	cl := defaultCleaner(500 * time.Millisecond)
 	C := &Cache{
-		neCache: nec,
-		exCache: exc,
-		cleaner: cl,
-		watcher: nil,
+		neCache:  nec,
+		exCache:  exc,
+		cleaner:  cl,
+		wStopped: true,
 	}
 	go cl.run(exc)
 	return C
 }
 
+// thread-safe
 func (c *Cache) ReplaceDaemonOp(wi time.Duration, f func(*Cache)) {
-	c.watchMu.Lock()
-	defer c.watchMu.Unlock()
 	if c.watcher != nil {
-		c.StopWatching()
+		_ = c.StopWatchingSync()
 		c.watcher.interval = wi
 		c.watcher.op = f
 	} else {
 		c.watcher = newWatcher(wi, f)
 	}
-	c.StartWatching()
 }
 
-func (c *Cache) StopWatching() {
-	c.watcher.stop <- true
-	time.Sleep(100 * time.Millisecond)
+// This func may cause blocking when the daemon op is very complicated.
+// Use StopWatchingAsync() if you do not want to get blocked.
+func (c *Cache) StopWatchingSync() error {
+	c.watchMu.Lock()
+	if c.watcher == nil {
+		c.watchMu.Unlock()
+		return fmt.Errorf("there is no daemon watcher")
+	}
+	if c.wStopped {
+		c.watchMu.Unlock()
+		return fmt.Errorf("daemon watcher has stopped")
+	}
+	c.watcher.stopAndWait()
+	c.wStopped = true
+	c.watchMu.Unlock()
+	return nil
 }
 
-func (c *Cache) StartWatching() {
-	go c.watcher.run(c)
+func (c *Cache) StopWatchingAsync() error {
+	c.watchMu.Lock()
+	if c.watcher == nil {
+		c.watchMu.Unlock()
+		return fmt.Errorf("there is no daemon watcher")
+	}
+	if c.wStopped {
+		c.watchMu.Unlock()
+		return fmt.Errorf("daemon watcher has stopped")
+	}
+	go func() {
+		c.watcher.stopNow()
+		c.wStopped = true
+		c.watchMu.Unlock()
+	}()
+	return nil
+}
+
+func (c *Cache) StartWatching() error {
+	c.watchMu.Lock()
+	defer c.watchMu.Unlock()
+	if c.watcher != nil {
+		if !c.wStopped {
+			return fmt.Errorf("the daemon watcher has started")
+		} else {
+			go c.watcher.run(c)
+		}
+	}
+	c.wStopped = false
+	return nil
 }
 
 func (c *Cache) AddDelHandler(f func(key string, val interface{})) {
@@ -88,6 +129,14 @@ func (c *Cache) Get(key string) interface{} {
 
 func (c *Cache) Del(key string) {
 	c.neCache.del(key)
+	c.exCache.del(key)
+}
+
+func (c *Cache) Unlink(key string) {
+	c.neCache.unlink(key)
+	if c.exCache != c.neCache {
+		c.exCache.unlink(key)
+	}
 }
 
 func (c *Cache) Incr(key string) error {
@@ -110,10 +159,28 @@ func (c *Cache) Ttl(key string) (time.Duration, bool) {
 	return c.neCache.ttl(key)
 }
 
-func (c *Cache) Save(filename string) error {
-	return c.neCache.saveFile(filename)
+// TODO enhancement required in the future
+func (c *Cache) Save(filename string, ok chan bool) {
+	go func() {
+		err := c.neCache.saveFile(filename)
+		if err != nil {
+			ok <- false
+			// do something else
+		}
+	}()
 }
 
 func (c *Cache) Load(filename string) error {
 	return c.neCache.loadFile(filename)
+}
+
+func (c *Cache) Cls() {
+	c.exCache.cls()
+	c.neCache.cls()
+}
+
+func (c *Cache) Cnt() int {
+	// the result contains the expired items
+	// which are not cleaned before the func is called.
+	return c.exCache.cnt() + c.neCache.cnt()
 }
