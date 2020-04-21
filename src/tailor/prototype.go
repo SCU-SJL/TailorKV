@@ -88,6 +88,14 @@ func (c *Cache) Get(key string) interface{} {
 
 func (c *Cache) Del(key string) {
 	c.neCache.del(key)
+	c.exCache.del(key)
+}
+
+func (c *Cache) Unlink(key string) {
+	c.neCache.unlink(key)
+	if c.exCache != c.neCache {
+		c.exCache.unlink(key)
+	}
 }
 
 func (c *Cache) Incr(key string) error {
@@ -110,7 +118,7 @@ func (c *Cache) Ttl(key string) (time.Duration, bool) {
 	return c.neCache.ttl(key)
 }
 
-// TODO enhancement required
+// TODO enhancement required in the future
 func (c *Cache) Save(filename string, ok chan bool) {
 	go func() {
 		err := c.neCache.saveFile(filename)

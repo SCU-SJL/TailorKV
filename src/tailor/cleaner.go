@@ -58,7 +58,7 @@ func newCleanerWithHandler(t time.Duration, handler func(c *cache)) *cleaner {
 	cl := &cleaner{
 		interval: t,
 		stop:     make(chan bool),
-		stopped:  false,
+		stopped:  true,
 		clean:    handler,
 	}
 	return cl

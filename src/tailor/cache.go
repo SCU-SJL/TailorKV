@@ -61,6 +61,10 @@ type cache struct {
 	items             map[string]Item
 	mu                sync.RWMutex
 	afterDel          func(string, interface{})
+
+	stopCleaner  chan bool
+	asyncCleaner *cleaner
+	asyncQueue   LinkedList
 }
 
 func newCache(de time.Duration, m map[string]Item) *cache {
@@ -70,9 +74,20 @@ func newCache(de time.Duration, m map[string]Item) *cache {
 	if m == nil {
 		m = make(map[string]Item)
 	}
+
+	asyncDelFunc := func(c *cache) {
+		unlinkedKey, err := c.asyncQueue.Poll()
+		if err == nil {
+			c.del(unlinkedKey.(string))
+		} else {
+			time.Sleep(1 * time.Second)
+		}
+	}
+	asyncCl := newCleanerWithHandler(500*time.Millisecond, asyncDelFunc)
 	c := &cache{
 		defaultExpiration: de,
 		items:             m,
+		asyncCleaner:      asyncCl,
 	}
 	return c
 }
@@ -116,8 +131,6 @@ func (c *cache) setnx(key string, val interface{}, lastFor time.Duration) error 
 	return nil
 }
 
-// find - find item from map
-// thread-unsafe
 func (c *cache) find(key string) (Item, bool) {
 	item, found := c.items[key]
 	if !found || item.Expired() {
@@ -255,6 +268,20 @@ func (c *cache) del(key string) {
 	}
 }
 
+func (c *cache) unlink(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	item, found := c.find(key)
+	if !found {
+		return
+	}
+	item.Expiration = 0
+	c.asyncQueue.Offer(key)
+	if c.asyncCleaner.isStopped() {
+		go c.asyncCleaner.run(c)
+	}
+}
+
 func (c *cache) doDel(key string) (interface{}, bool) {
 	if c.afterDel != nil {
 		if item, found := c.items[key]; found {
@@ -279,8 +306,10 @@ func (kv *KV) Val() interface{} {
 	return kv.val
 }
 
+// for exCache only
 func (c *cache) delExpired() {
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	var itemsWithHandler []KV
 	ticker := time.After(100 * time.Millisecond)
 loop:
@@ -304,7 +333,6 @@ loop:
 			}
 		}
 	}
-	c.mu.Unlock()
 
 	go func() {
 		for _, item := range itemsWithHandler {
