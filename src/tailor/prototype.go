@@ -1,17 +1,19 @@
 package tailor
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
 )
 
 type Cache struct {
-	neCache *cache
-	exCache *cache
-	watcher *watcher
-	cleaner *cleaner
-	watchMu sync.Mutex
+	neCache  *cache
+	exCache  *cache
+	watcher  *watcher
+	cleaner  *cleaner
+	watchMu  sync.Mutex
+	wStopped bool
 }
 
 func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
@@ -25,9 +27,10 @@ func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
 	// clean expired data twice each second
 	cl := defaultCleaner(500 * time.Millisecond)
 	C := &Cache{
-		neCache: nec,
-		exCache: exc,
-		cleaner: cl,
+		neCache:  nec,
+		exCache:  exc,
+		cleaner:  cl,
+		wStopped: true,
 	}
 	go cl.run(exc)
 	return C
@@ -35,32 +38,63 @@ func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
 
 // thread-safe
 func (c *Cache) ReplaceDaemonOp(wi time.Duration, f func(*Cache)) {
-	c.watchMu.Lock()
-	defer c.watchMu.Unlock()
 	if c.watcher != nil {
-		c.StopWatching()
+		_ = c.StopWatchingSync()
 		c.watcher.interval = wi
 		c.watcher.op = f
 	} else {
 		c.watcher = newWatcher(wi, f)
 	}
-	c.StartWatching()
 }
 
-// This func may cause blocking when the daemon op is very complicated
-// if you do not want to be blocked, I suggest you to create a new goroutine
-// to call this func and make sure the new goroutine won't get disturbed.
-func (c *Cache) StopWatching() {
-	if c.watcher != nil {
-		close(c.watcher.stop)
-		<-c.watcher.stopped
+// This func may cause blocking when the daemon op is very complicated.
+// Use StopWatchingAsync() if you do not want to get blocked.
+func (c *Cache) StopWatchingSync() error {
+	c.watchMu.Lock()
+	if c.watcher == nil {
+		c.watchMu.Unlock()
+		return fmt.Errorf("there is no daemon watcher")
 	}
+	if c.wStopped {
+		c.watchMu.Unlock()
+		return fmt.Errorf("daemon watcher has stopped")
+	}
+	c.watcher.stopAndWait()
+	c.wStopped = true
+	c.watchMu.Unlock()
+	return nil
 }
 
-func (c *Cache) StartWatching() {
-	if c.watcher != nil {
-		go c.watcher.run(c)
+func (c *Cache) StopWatchingAsync() error {
+	c.watchMu.Lock()
+	if c.watcher == nil {
+		c.watchMu.Unlock()
+		return fmt.Errorf("there is no daemon watcher")
 	}
+	if c.wStopped {
+		c.watchMu.Unlock()
+		return fmt.Errorf("daemon watcher has stopped")
+	}
+	go func() {
+		c.watcher.stopNow()
+		c.wStopped = true
+		c.watchMu.Unlock()
+	}()
+	return nil
+}
+
+func (c *Cache) StartWatching() error {
+	c.watchMu.Lock()
+	defer c.watchMu.Unlock()
+	if c.watcher != nil {
+		if !c.wStopped {
+			return fmt.Errorf("the daemon watcher has started")
+		} else {
+			go c.watcher.run(c)
+		}
+	}
+	c.wStopped = false
+	return nil
 }
 
 func (c *Cache) AddDelHandler(f func(key string, val interface{})) {

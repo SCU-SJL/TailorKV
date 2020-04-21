@@ -63,6 +63,7 @@ func TestCache_Watching(t *testing.T) {
 		fmt.Println("daemon report: len = ", c.Cnt())
 	}
 	c.ReplaceDaemonOp(1*time.Second, op)
+	_ = c.StartWatching()
 	go func() {
 		for i := 0; i < len(keys); i++ {
 			c.Set(keys[i], vals[i])
@@ -74,13 +75,40 @@ func TestCache_Watching(t *testing.T) {
 		c.Set("k33", 33)
 	}()
 	<-time.After(5 * time.Second)
-	c.StopWatching()
+	_ = c.StopWatchingSync()
 
 	fmt.Println("stop for 2s")
 	<-time.After(2 * time.Second)
 
 	fmt.Println("start watching now")
-	c.StartWatching()
+
+	_ = c.StartWatching()
+	_ = c.StartWatching()
+	_ = c.StartWatching()
+	_ = c.StartWatching()
+
+	fmt.Println("replace op after 3s")
+	<-time.After(3 * time.Second)
+	go func() {
+		op2 := func(c *Cache) {
+			fmt.Println("new daemon op")
+		}
+		c.ReplaceDaemonOp(1*time.Second, op2)
+		_ = c.StartWatching()
+	}()
 
 	<-time.After(5 * time.Second)
+}
+
+func TestCache_StartWatching(t *testing.T) {
+	op := func(c *Cache) {
+		fmt.Println("daemon report: len = ", c.Cnt())
+	}
+	c.ReplaceDaemonOp(1*time.Second, op)
+	_ = c.StartWatching()
+	fmt.Println(c.StartWatching(), " --1")
+	fmt.Println(c.StartWatching(), " --2")
+	fmt.Println(c.StartWatching(), " --3")
+	fmt.Println(c.StartWatching(), " --4")
+	<-time.After(3 * time.Second)
 }

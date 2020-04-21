@@ -1,6 +1,7 @@
 package tailor
 
 import (
+	"sync"
 	"time"
 )
 
@@ -8,22 +9,25 @@ type watcher struct {
 	interval time.Duration
 	stop     chan struct{}
 	op       func(c *Cache)
-	stopped  chan struct{}
+	waitStop chan struct{}
+	mu       sync.Mutex
 }
 
 func (w *watcher) run(c *Cache) {
-	defer func() {
-		close(w.stopped)
-	}()
 	w.stop = make(chan struct{})
-	w.stopped = make(chan struct{})
+	w.waitStop = make(chan struct{})
 	ticker := time.Tick(w.interval)
+
+	defer func() {
+		close(w.waitStop)
+	}()
+
 	for {
 		select {
 		case <-ticker:
 			if w.op != nil {
 				// cannot and no need create a goroutine here,
-				// as the watcher may be stopped or replaced at any time.
+				// as the watcher may be waitStop or replaced at any time.
 				w.op(c)
 			}
 		case <-w.stop:
@@ -32,10 +36,20 @@ func (w *watcher) run(c *Cache) {
 	}
 }
 
+func (w *watcher) stopNow() {
+	close(w.stop)
+}
+
+func (w *watcher) stopAndWait() {
+	close(w.stop)
+	<-w.waitStop
+}
+
 func newWatcher(t time.Duration, f func(*Cache)) *watcher {
 	return &watcher{
 		interval: t,
 		stop:     make(chan struct{}),
 		op:       f,
+		waitStop: make(chan struct{}),
 	}
 }
