@@ -110,8 +110,15 @@ func (c *Cache) Ttl(key string) (time.Duration, bool) {
 	return c.neCache.ttl(key)
 }
 
-func (c *Cache) Save(filename string) error {
-	return c.neCache.saveFile(filename)
+// TODO enhancement required
+func (c *Cache) Save(filename string, ok chan bool) {
+	go func() {
+		err := c.neCache.saveFile(filename)
+		if err != nil {
+			ok <- false
+			// do something else
+		}
+	}()
 }
 
 func (c *Cache) Load(filename string) error {
