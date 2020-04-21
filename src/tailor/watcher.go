@@ -1,18 +1,22 @@
 package tailor
 
-import "time"
+import (
+	"time"
+)
 
 type watcher struct {
 	interval time.Duration
-	stop     chan bool
+	stop     chan struct{}
 	op       func(c *Cache)
-	stopped  chan bool
+	stopped  chan struct{}
 }
 
 func (w *watcher) run(c *Cache) {
 	defer func() {
-		w.stopped <- true
+		close(w.stopped)
 	}()
+	w.stop = make(chan struct{})
+	w.stopped = make(chan struct{})
 	ticker := time.Tick(w.interval)
 	for {
 		select {
@@ -31,7 +35,7 @@ func (w *watcher) run(c *Cache) {
 func newWatcher(t time.Duration, f func(*Cache)) *watcher {
 	return &watcher{
 		interval: t,
-		stop:     make(chan bool),
+		stop:     make(chan struct{}),
 		op:       f,
 	}
 }

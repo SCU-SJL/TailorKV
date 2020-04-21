@@ -7,7 +7,7 @@ import (
 
 type cleaner struct {
 	interval time.Duration
-	stop     chan bool
+	stop     chan struct{}
 	stopped  bool
 	clean    func(*cache)
 }
@@ -31,7 +31,7 @@ func (cl *cleaner) run(c *cache) {
 }
 
 func (cl *cleaner) stopNow() {
-	cl.stop <- true
+	close(cl.stop)
 }
 
 func (cl *cleaner) setInterval(t time.Duration) error {
@@ -45,7 +45,7 @@ func (cl *cleaner) setInterval(t time.Duration) error {
 func defaultCleaner(t time.Duration) *cleaner {
 	cl := &cleaner{
 		interval: t,
-		stop:     make(chan bool),
+		stop:     make(chan struct{}),
 		stopped:  false,
 		clean: func(c *cache) {
 			c.delExpired()
@@ -57,7 +57,7 @@ func defaultCleaner(t time.Duration) *cleaner {
 func newCleanerWithHandler(t time.Duration, handler func(c *cache)) *cleaner {
 	cl := &cleaner{
 		interval: t,
-		stop:     make(chan bool),
+		stop:     make(chan struct{}),
 		stopped:  true,
 		clean:    handler,
 	}
