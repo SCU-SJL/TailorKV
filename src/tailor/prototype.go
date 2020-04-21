@@ -117,3 +117,14 @@ func (c *Cache) Save(filename string) error {
 func (c *Cache) Load(filename string) error {
 	return c.neCache.loadFile(filename)
 }
+
+func (c *Cache) Cls() {
+	c.exCache.cls()
+	c.neCache.cls()
+}
+
+func (c *Cache) Cnt() int {
+	// the result contains the expired items
+	// which are not cleaned before the func is called.
+	return c.exCache.cnt() + c.neCache.cnt()
+}
