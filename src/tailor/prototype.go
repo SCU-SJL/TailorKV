@@ -28,12 +28,12 @@ func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
 		neCache: nec,
 		exCache: exc,
 		cleaner: cl,
-		watcher: nil,
 	}
 	go cl.run(exc)
 	return C
 }
 
+// thread-safe
 func (c *Cache) ReplaceDaemonOp(wi time.Duration, f func(*Cache)) {
 	c.watchMu.Lock()
 	defer c.watchMu.Unlock()
@@ -47,13 +47,20 @@ func (c *Cache) ReplaceDaemonOp(wi time.Duration, f func(*Cache)) {
 	c.StartWatching()
 }
 
+// This func may cause blocking when the daemon op is very complicated
+// if you do not want to be blocked, I suggest you to create a new goroutine
+// to call this func and make sure the new goroutine won't get disturbed.
 func (c *Cache) StopWatching() {
-	c.watcher.stop <- true
-	time.Sleep(100 * time.Millisecond)
+	if c.watcher != nil {
+		close(c.watcher.stop)
+		<-c.watcher.stopped
+	}
 }
 
 func (c *Cache) StartWatching() {
-	go c.watcher.run(c)
+	if c.watcher != nil {
+		go c.watcher.run(c)
+	}
 }
 
 func (c *Cache) AddDelHandler(f func(key string, val interface{})) {
