@@ -2,6 +2,7 @@ package tailor
 
 import (
 	"fmt"
+	"sync"
 )
 
 type node struct {
@@ -14,13 +15,18 @@ type LinkedList struct {
 	size int
 	head *node
 	tail *node
+	mu   sync.RWMutex
 }
 
 func (list *LinkedList) Size() int {
+	list.mu.RLock()
+	defer list.mu.RUnlock()
 	return list.size
 }
 
 func (list *LinkedList) Get(n int) (interface{}, error) {
+	list.mu.RLock()
+	defer list.mu.RUnlock()
 	if err := list.illegalIndexCheck(n); err != nil {
 		return nil, err
 	}
@@ -29,6 +35,8 @@ func (list *LinkedList) Get(n int) (interface{}, error) {
 }
 
 func (list *LinkedList) Set(n int, data interface{}) error {
+	list.mu.Lock()
+	defer list.mu.Unlock()
 	if err := list.illegalIndexCheck(n); err != nil {
 		return err
 	}
@@ -38,6 +46,8 @@ func (list *LinkedList) Set(n int, data interface{}) error {
 }
 
 func (list *LinkedList) GetFirst() (interface{}, error) {
+	list.mu.RLock()
+	defer list.mu.RUnlock()
 	if err := list.illegalIndexCheck(0); err != nil {
 		return nil, err
 	}
@@ -45,6 +55,8 @@ func (list *LinkedList) GetFirst() (interface{}, error) {
 }
 
 func (list *LinkedList) GetLast() (interface{}, error) {
+	list.mu.RLock()
+	defer list.mu.RUnlock()
 	if err := list.illegalIndexCheck(list.size - 1); err != nil {
 		return nil, err
 	}
@@ -56,6 +68,8 @@ func (list *LinkedList) AddFirst(data interface{}) {
 		data: data,
 		prev: nil,
 	}
+	list.mu.Lock()
+	defer list.mu.Unlock()
 	if list.head != nil {
 		cur.next = list.head
 		list.head.prev = cur
@@ -71,6 +85,8 @@ func (list *LinkedList) AddLast(data interface{}) {
 		data: data,
 		next: nil,
 	}
+	list.mu.Lock()
+	defer list.mu.Unlock()
 	if list.tail != nil {
 		cur.prev = list.tail
 		list.tail.next = cur
@@ -82,6 +98,8 @@ func (list *LinkedList) AddLast(data interface{}) {
 }
 
 func (list *LinkedList) RemoveFirst() (interface{}, error) {
+	list.mu.Lock()
+	defer list.mu.Unlock()
 	if err := list.illegalIndexCheck(0); err != nil {
 		return nil, err
 	}
@@ -93,6 +111,8 @@ func (list *LinkedList) RemoveFirst() (interface{}, error) {
 }
 
 func (list *LinkedList) RemoveLast() (interface{}, error) {
+	list.mu.Lock()
+	defer list.mu.Unlock()
 	if err := list.illegalIndexCheck(list.size - 1); err != nil {
 		return nil, err
 	}
