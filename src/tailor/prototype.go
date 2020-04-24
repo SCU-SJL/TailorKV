@@ -102,20 +102,20 @@ func (c *Cache) AddDelHandler(f func(key string, val interface{})) {
 	c.exCache.addDelHandler(f)
 }
 
-func (c *Cache) Set(key string, val interface{}) {
+func (c *Cache) set(key string, val interface{}) {
 	c.neCache.set(key, val, DefaultExpiration)
 }
 
-func (c *Cache) Setnx(key string, val interface{}) bool {
+func (c *Cache) setnx(key string, val interface{}) bool {
 	err := c.neCache.setnx(key, val, DefaultExpiration)
 	return err == nil
 }
 
-func (c *Cache) Setex(key string, val interface{}, t time.Duration) {
+func (c *Cache) setex(key string, val interface{}, t time.Duration) {
 	c.exCache.set(key, val, t)
 }
 
-func (c *Cache) Get(key string) interface{} {
+func (c *Cache) get(key string) interface{} {
 	val, ok := c.neCache.get(key)
 	if ok {
 		return val
@@ -127,23 +127,23 @@ func (c *Cache) Get(key string) interface{} {
 	return nil
 }
 
-func (c *Cache) Del(key string) {
+func (c *Cache) del(key string) {
 	c.neCache.del(key)
 	c.exCache.del(key)
 }
 
-func (c *Cache) Unlink(key string) {
+func (c *Cache) unlink(key string) {
 	c.neCache.unlink(key)
 	if c.exCache != c.neCache {
 		c.exCache.unlink(key)
 	}
 }
 
-func (c *Cache) Incr(key string) error {
+func (c *Cache) incr(key string) error {
 	return c.neCache.incrby(key, 1)
 }
 
-func (c *Cache) Incrby(key string, s string) error {
+func (c *Cache) incrby(key string, s string) error {
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		return err
@@ -155,7 +155,7 @@ func (c *Cache) Keys(exp string) ([]KV, error) {
 	return c.neCache.keys(exp)
 }
 
-func (c *Cache) Ttl(key string) (time.Duration, bool) {
+func (c *Cache) ttl(key string) (time.Duration, bool) {
 	return c.neCache.ttl(key)
 }
 
