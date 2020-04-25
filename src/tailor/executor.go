@@ -28,6 +28,7 @@ type job struct {
 
 type response struct {
 	value interface{}
+	ok    bool
 	err   error
 }
 
@@ -52,6 +53,10 @@ func (exc *executor) execute(j *job) {
 	exc.jobs <- j
 }
 
+/*
+ * write - serial
+ * read  - parallel
+ */
 func (exc *executor) server() {
 	for j := range exc.jobs {
 		switch j.op {
@@ -74,7 +79,23 @@ func (exc *executor) server() {
 			}()
 		case del:
 			exc.c.del(j.key)
-			//TODO finish the rest cases
+		case unlink:
+			exc.c.unlink(j.key)
+		case incr:
+			j.res.err = exc.c.incr(j.key)
+		case incrby:
+			j.res.err = exc.c.incrby(j.key, j.val.(string))
+		case ttl:
+			go func() {
+				if exc.isReady() {
+					exc.addCount(true)
+					j.res.value, j.res.ok = exc.c.ttl(j.key)
+					close(j.done)
+					exc.addCount(false)
+				} else {
+					exc.jobs <- j
+				}
+			}()
 		}
 	}
 }
