@@ -103,7 +103,11 @@ func (c *Cache) AddDelHandler(f func(key string, val interface{})) {
 }
 
 func (c *Cache) set(key string, val interface{}) {
-	c.neCache.set(key, val, DefaultExpiration)
+	if _, ok := c.exCache.get(key); ok {
+		c.exCache.set(key, val, DefaultExpiration)
+	} else {
+		c.neCache.set(key, val, DefaultExpiration)
+	}
 }
 
 func (c *Cache) setnx(key string, val interface{}) bool {
@@ -129,7 +133,9 @@ func (c *Cache) get(key string) interface{} {
 
 func (c *Cache) del(key string) {
 	c.neCache.del(key)
-	c.exCache.del(key)
+	if c.exCache != c.neCache {
+		c.exCache.del(key)
+	}
 }
 
 func (c *Cache) unlink(key string) {
@@ -140,7 +146,11 @@ func (c *Cache) unlink(key string) {
 }
 
 func (c *Cache) incr(key string) error {
-	return c.neCache.incrby(key, 1)
+	err := c.neCache.incrby(key, 1)
+	if err != nil {
+		return c.exCache.incrby(key, 1)
+	}
+	return err
 }
 
 func (c *Cache) incrby(key string, s string) error {
@@ -148,7 +158,11 @@ func (c *Cache) incrby(key string, s string) error {
 	if err != nil {
 		return err
 	}
-	return c.neCache.incrby(key, n)
+	err = c.neCache.incrby(key, n)
+	if err != nil {
+		return c.exCache.incrby(key, n)
+	}
+	return err
 }
 
 func (c *Cache) Keys(exp string) ([]KV, error) {
@@ -181,6 +195,6 @@ func (c *Cache) Cls() {
 
 func (c *Cache) Cnt() int {
 	// the result contains the expired items
-	// which are not cleaned before the func is called.
+	// which are not cleaned when the func is called.
 	return c.exCache.cnt() + c.neCache.cnt()
 }
