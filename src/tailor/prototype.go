@@ -17,12 +17,13 @@ type Cache struct {
 }
 
 func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
-	var exc *cache
-	nec := newCache(defaultExpiration, m)
-	if defaultExpiration < 0 {
-		exc = newCache(defaultExpiration, m)
+	var nec, exc *cache
+	if defaultExpiration <= 0 { // if expiry time is not greater than zero, then make it NoExpiration
+		nec = newCache(NoExpiration, m)
+		exc = newCache(NoExpiration, m)
 	} else {
-		exc = nec
+		exc = newCache(defaultExpiration, m)
+		nec = exc
 	}
 	// clean expired data twice each second
 	cl := defaultCleaner(500 * time.Millisecond)
@@ -43,12 +44,14 @@ func (c *Cache) ReplaceDaemonOp(wi time.Duration, f func(*Cache)) {
 		c.watcher.interval = wi
 		c.watcher.op = f
 	} else {
+		c.watchMu.Lock()
 		c.watcher = newWatcher(wi, f)
+		c.watchMu.Unlock()
 	}
 }
 
 // This func may cause blocking when the daemon op is very complicated.
-// Use StopWatchingAsync() if you do not want to get blocked.
+// Use StopWatchingAsync() if you don't want to get blocked.
 func (c *Cache) StopWatchingSync() error {
 	c.watchMu.Lock()
 	if c.watcher == nil {
@@ -76,7 +79,7 @@ func (c *Cache) StopWatchingAsync() error {
 		return fmt.Errorf("daemon watcher has stopped")
 	}
 	go func() {
-		c.watcher.stopNow()
+		c.watcher.stopAndWait()
 		c.wStopped = true
 		c.watchMu.Unlock()
 	}()
@@ -166,26 +169,49 @@ func (c *Cache) incrby(key string, s string) error {
 }
 
 func (c *Cache) Keys(exp string) ([]KV, error) {
-	return c.neCache.keys(exp)
+	var res []KV
+	res, err := c.neCache.keys(exp)
+	if err != nil {
+		return nil, err
+	}
+	exKV, err := c.exCache.keys(exp)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, exKV...)
+	return res, nil
 }
 
 func (c *Cache) ttl(key string) (time.Duration, bool) {
-	return c.neCache.ttl(key)
+	return c.exCache.ttl(key)
 }
 
 // TODO enhancement required in the future
 func (c *Cache) Save(filename string, ok chan bool) {
 	go func() {
-		err := c.neCache.saveFile(filename)
+		err := c.neCache.saveFile("NE" + filename)
 		if err != nil {
 			ok <- false
-			// do something else
 		}
+		ok <- true
+	}()
+
+	go func() {
+		err := c.exCache.saveFile("EX" + filename)
+		if err != nil {
+			ok <- false
+		}
+		ok <- true
 	}()
 }
 
 func (c *Cache) Load(filename string) error {
-	return c.neCache.loadFile(filename)
+	err := c.neCache.loadFile("NE" + filename)
+	if err != nil {
+		return err
+	}
+	err = c.exCache.loadFile("EX" + filename)
+	return err
 }
 
 func (c *Cache) Cls() {
