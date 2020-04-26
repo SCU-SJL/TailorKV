@@ -63,7 +63,8 @@ func (exc *executor) server() {
 		case setex:
 			exc.c.setex(j.key, j.val, j.exp)
 		case setnx:
-			exc.c.setnx(j.key, j.val)
+			j.res.value = exc.c.setnx(j.key, j.val)
+			close(j.done)
 		case set:
 			exc.c.set(j.key, j.val)
 		case get:
@@ -83,8 +84,10 @@ func (exc *executor) server() {
 			exc.c.unlink(j.key)
 		case incr:
 			j.res.err = exc.c.incr(j.key)
+			close(j.done)
 		case incrby:
 			j.res.err = exc.c.incrby(j.key, j.val.(string))
+			close(j.done)
 		case ttl:
 			go func() {
 				if exc.isReady() {
