@@ -2,6 +2,7 @@ package tailor
 
 import (
 	"fmt"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -14,17 +15,20 @@ type Cache struct {
 	cleaner  *cleaner
 	watchMu  sync.Mutex
 	wStopped bool
+	executor *executor
 }
 
 func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
+	// if expiry time is not greater than zero, then make it NoExpiration
 	var nec, exc *cache
-	if defaultExpiration <= 0 { // if expiry time is not greater than zero, then make it NoExpiration
+	if defaultExpiration <= 0 {
 		nec = newCache(NoExpiration, m)
 		exc = newCache(NoExpiration, m)
 	} else {
 		exc = newCache(defaultExpiration, m)
 		nec = exc
 	}
+
 	// clean expired data twice each second
 	cl := defaultCleaner(500 * time.Millisecond)
 	C := &Cache{
@@ -33,7 +37,15 @@ func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
 		cleaner:  cl,
 		wStopped: true,
 	}
+
+	// create a new executor
+	exec := newExecutor(C, uint8(2*runtime.NumCPU()))
+	C.executor = exec
+
+	// start the daemon cleaner
 	go cl.run(exc)
+	// start the executor
+	go exec.server()
 	return C
 }
 
@@ -106,11 +118,7 @@ func (c *Cache) AddDelHandler(f func(key string, val interface{})) {
 }
 
 func (c *Cache) set(key string, val interface{}) {
-	if _, ok := c.exCache.get(key); ok {
-		c.exCache.set(key, val, DefaultExpiration)
-	} else {
-		c.neCache.set(key, val, DefaultExpiration)
-	}
+	c.neCache.set(key, val, DefaultExpiration)
 }
 
 func (c *Cache) setnx(key string, val interface{}) bool {
@@ -168,6 +176,11 @@ func (c *Cache) incrby(key string, s string) error {
 	return err
 }
 
+/*
+ * functions above is for Cache itself only.
+ * functions below is exposed to users.
+ */
+
 func (c *Cache) Keys(exp string) ([]KV, error) {
 	var res []KV
 	res, err := c.neCache.keys(exp)
@@ -186,7 +199,7 @@ func (c *Cache) ttl(key string) (time.Duration, bool) {
 	return c.exCache.ttl(key)
 }
 
-// TODO enhancement required in the future
+// Save param ok must be a chan with length of 2
 func (c *Cache) Save(filename string, ok chan bool) {
 	go func() {
 		err := c.neCache.saveFile("NE" + filename)
@@ -216,11 +229,114 @@ func (c *Cache) Load(filename string) error {
 
 func (c *Cache) Cls() {
 	c.exCache.cls()
-	c.neCache.cls()
+	if c.neCache != c.exCache {
+		c.neCache.cls()
+	}
 }
 
 func (c *Cache) Cnt() int {
 	// the result contains the expired items
 	// which are not cleaned when the func is called.
-	return c.exCache.cnt() + c.neCache.cnt()
+	cnt := c.neCache.cnt()
+	if c.exCache != c.neCache {
+		cnt += c.exCache.cnt()
+	}
+	return cnt
+}
+
+func (c *Cache) Set(key string, val interface{}) {
+	newJob := &job{
+		op:  set,
+		key: key,
+		val: val,
+	}
+	c.executor.execute(newJob)
+}
+
+func (c *Cache) Setnx(key string, val interface{}) bool {
+	newJob := &job{
+		op:   setnx,
+		key:  key,
+		val:  val,
+		done: make(chan struct{}),
+		res:  response{},
+	}
+	c.executor.execute(newJob)
+	<-newJob.done
+	return newJob.res.value.(bool)
+}
+
+func (c *Cache) Setex(key string, val interface{}, exp time.Duration) {
+	newJob := &job{
+		op:  setex,
+		key: key,
+		val: val,
+		exp: exp,
+	}
+	c.executor.execute(newJob)
+}
+
+func (c *Cache) Get(key string) interface{} {
+	newJob := &job{
+		op:   get,
+		key:  key,
+		done: make(chan struct{}),
+		res:  response{},
+	}
+	c.executor.execute(newJob)
+	<-newJob.done
+	return newJob.res.value
+}
+
+func (c *Cache) Del(key string) {
+	newJob := &job{
+		op:  del,
+		key: key,
+	}
+	c.executor.execute(newJob)
+}
+
+func (c *Cache) Unlink(key string) {
+	newJob := &job{
+		op:  unlink,
+		key: key,
+	}
+	c.executor.execute(newJob)
+}
+
+func (c *Cache) Incr(key string) error {
+	newJob := &job{
+		op:   incr,
+		key:  key,
+		done: make(chan struct{}),
+		res:  response{},
+	}
+	c.executor.execute(newJob)
+	<-newJob.done
+	return newJob.res.err
+}
+
+func (c *Cache) Incrby(key, addition string) error {
+	newJob := &job{
+		op:   incrby,
+		key:  key,
+		val:  addition,
+		done: make(chan struct{}),
+		res:  response{},
+	}
+	c.executor.execute(newJob)
+	<-newJob.done
+	return newJob.res.err
+}
+
+func (c *Cache) Ttl(key string) (time.Duration, bool) {
+	newJob := &job{
+		op:   ttl,
+		key:  key,
+		done: make(chan struct{}),
+		res:  response{},
+	}
+	c.executor.execute(newJob)
+	<-newJob.done
+	return newJob.res.value.(time.Duration), newJob.res.ok
 }
