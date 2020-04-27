@@ -2,10 +2,14 @@ package tailor
 
 import (
 	"fmt"
+	"math/rand"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 )
+
+var initMap = map[string]string{"a": "a", "b": "b", "c": "c", "d": "d", "e": "e", "f": "f"}
 
 func TestExecutor(t *testing.T) {
 	c := NewCache(NoExpiration, nil)
@@ -63,6 +67,79 @@ func TestCache_ReplaceDaemonOp(t *testing.T) {
 		t.Errorf("cannot start daemon watcher: %v", err)
 	}
 	<-time.After(3 * time.Second)
+}
+
+func TestCache_Keys(t *testing.T) {
+	c := NewCache(NoExpiration, nil)
+	for k, v := range initMap {
+		c.Set(k, v)
+	}
+	c.Setex("ex", "ex", 3*time.Second)
+	<-time.After(500 * time.Millisecond)
+	res, _ := c.Keys("[A-z]+")
+	if len(res) != 7 {
+		t.Errorf("keys failed: len of cache = %d", len(res))
+	}
+}
+
+func TestCache_Incrby(t *testing.T) {
+	c := NewCache(NoExpiration, nil)
+
+	// regular int test
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < 1000; i++ {
+		key := "Int" + string(i)
+		num := rand.Intn(MaxInt/2 - 1)
+		c.Set(key, num)
+		err := c.Incrby(key, strconv.Itoa(num))
+		if err != nil {
+			t.Errorf("Incr %s with valye of %d failed: %v", key, num, err)
+			return
+		}
+		after := c.Get(key).(int)
+		if after != 2*num {
+			t.Errorf("Incr wrong, expected:%d, actual:%d", 2*num, after)
+		}
+	}
+
+	// border test
+	c.Set("border", uint8(33))
+	if err := c.Incrby("border", strconv.Itoa(256)); err == nil {
+		t.Errorf("Incr didn't throw err")
+	}
+	v := c.Get("border")
+	if int(v.(uint8)) != 33 {
+		t.Errorf("Incr changed value, expected:33, actual:%d", v)
+	}
+
+	// ... More test
+}
+
+func TestCache_Save(t *testing.T) {
+	c := NewCache(NoExpiration, nil)
+	for i := 0; i < 10; i++ {
+		k := "k" + strconv.Itoa(i)
+		v := "v" + strconv.Itoa(i)
+		c.Set(k, v)
+	}
+	c.Setex("exp", "exp10s", 10*time.Second)
+	ok := make(chan bool, 2)
+	c.Save("testCopy", ok)
+	if o := <-ok; !o {
+		t.Errorf("Save neCache failed")
+	}
+	if o := <-ok; !o {
+		t.Errorf("Save exCache failed")
+	}
+	c.Cls()
+	err := c.Load("testCopy")
+	if err != nil {
+		t.Errorf("Load failed: %v", err)
+	}
+	if c.Cnt() != 11 {
+		t.Errorf("size of cache is not correct")
+	}
+	fmt.Println(c.Ttl("exp"))
 }
 
 func TestCpuNum(t *testing.T) {
