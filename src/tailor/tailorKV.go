@@ -208,14 +208,15 @@ func (c *Cache) Save(filename string, ok chan bool) {
 		}
 		ok <- true
 	}()
-
-	go func() {
-		err := c.exCache.saveFile("EX" + filename)
-		if err != nil {
-			ok <- false
-		}
-		ok <- true
-	}()
+	if c.exCache != c.neCache {
+		go func() {
+			err := c.exCache.saveFile("EX" + filename)
+			if err != nil {
+				ok <- false
+			}
+			ok <- true
+		}()
+	}
 }
 
 func (c *Cache) Load(filename string) error {
@@ -223,8 +224,11 @@ func (c *Cache) Load(filename string) error {
 	if err != nil {
 		return err
 	}
-	err = c.exCache.loadFile("EX" + filename)
-	return err
+	if c.exCache != c.neCache {
+		err = c.exCache.loadFile("EX" + filename)
+		return err
+	}
+	return nil
 }
 
 func (c *Cache) Cls() {
