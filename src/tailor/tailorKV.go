@@ -176,27 +176,32 @@ func (c *Cache) incrby(key string, s string) error {
 	return err
 }
 
+func (c *Cache) ttl(key string) (time.Duration, bool) {
+	return c.exCache.ttl(key)
+}
+
 /*
  * functions above is for Cache itself only.
  * functions below is exposed to users.
  */
 
+// Keys get all KVs which match the regular expression.
+// The result may not contain the KV which was set into
+// the cache recently, as the Set operation is async.
 func (c *Cache) Keys(exp string) ([]KV, error) {
 	var res []KV
 	res, err := c.neCache.keys(exp)
 	if err != nil {
 		return nil, err
 	}
-	exKV, err := c.exCache.keys(exp)
-	if err != nil {
-		return nil, err
+	if c.exCache != c.neCache {
+		exKV, err := c.exCache.keys(exp)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, exKV...)
 	}
-	res = append(res, exKV...)
 	return res, nil
-}
-
-func (c *Cache) ttl(key string) (time.Duration, bool) {
-	return c.exCache.ttl(key)
 }
 
 // Save param ok must be a chan with length of 2
