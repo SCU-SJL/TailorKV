@@ -144,11 +144,16 @@ func TestCache_Save(t *testing.T) {
 
 func TestCache_AddDelHandler(t *testing.T) {
 	c := NewCache(NoExpiration, nil)
+	var resKey, resVal string
 	c.AddDelHandler(func(key string, val interface{}) {
-		fmt.Println("delete ", key, " with value of ", val)
+		resKey = key
+		resVal = val.(string)
 	})
 	c.Setex("exp", "exp1s", 1*time.Second)
 	<-time.After(2 * time.Second)
+	if resKey != "exp" || resVal != "exp1s" {
+		t.Errorf("del failed")
+	}
 }
 
 func TestCpuNum(t *testing.T) {
