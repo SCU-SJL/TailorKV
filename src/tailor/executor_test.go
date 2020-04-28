@@ -142,6 +142,15 @@ func TestCache_Save(t *testing.T) {
 	fmt.Println(c.Ttl("exp"))
 }
 
+func TestCache_AddDelHandler(t *testing.T) {
+	c := NewCache(NoExpiration, nil)
+	c.AddDelHandler(func(key string, val interface{}) {
+		fmt.Println("delete ", key, " with value of ", val)
+	})
+	c.Setex("exp", "exp1s", 1*time.Second)
+	<-time.After(2 * time.Second)
+}
+
 func TestCpuNum(t *testing.T) {
 	fmt.Println(runtime.NumCPU())
 }
