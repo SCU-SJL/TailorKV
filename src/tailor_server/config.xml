@@ -1,0 +1,19 @@
+<config>
+    <!--    negative numbers represent no expiration-->
+    <defaultExpiration>-1</defaultExpiration>
+
+    <!--    clean up cycle of the daemon cleaner which cleans the expired data (millisecond)-->
+    <cleanCycle>500</cleanCycle>
+
+    <!--    clean up cycle of the daemon cleaner which cleans the unlinked data (millisecond)-->
+    <asyncCleanCycle>500</asyncCleanCycle>
+
+    <!--    Maximum concurrent volume of tailorKV, default value is 2 * CPU-->
+    <concurrency>default</concurrency>
+
+    <!--    path to have persistent files-->
+    <savingPath>C:\\SJL\\Projects\\Github\\TailorFiles</savingPath>
+
+    <!--    name of the persistent files-->
+    <fileName>tailorBackUp.tkv</fileName>
+</config>
