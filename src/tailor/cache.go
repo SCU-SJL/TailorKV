@@ -67,10 +67,7 @@ type cache struct {
 	asyncQueue   LinkedList
 }
 
-func newCache(de time.Duration, m map[string]Item) *cache {
-	if de < 0 {
-		de = NoExpiration
-	}
+func newCache(de, asyncCycle time.Duration, m map[string]Item) *cache {
 	if m == nil {
 		m = make(map[string]Item)
 	}
@@ -83,7 +80,8 @@ func newCache(de time.Duration, m map[string]Item) *cache {
 			time.Sleep(1 * time.Second)
 		}
 	}
-	asyncCl := newCleanerWithHandler(500*time.Millisecond, asyncDelFunc)
+	asyncCl := newCleanerWithHandler(asyncCycle, asyncDelFunc)
+
 	c := &cache{
 		defaultExpiration: de,
 		items:             m,

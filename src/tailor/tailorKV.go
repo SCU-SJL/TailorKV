@@ -2,7 +2,6 @@ package tailor
 
 import (
 	"fmt"
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -18,19 +17,19 @@ type Cache struct {
 	executor *executor
 }
 
-func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
+func NewCache(defaultExpiration, cleanCycle, unlinkCycle time.Duration, concurrency uint8, m map[string]Item) *Cache {
 	// if expiry time is not greater than zero, then make it NoExpiration
 	var nec, exc *cache
 	if defaultExpiration <= 0 {
-		nec = newCache(NoExpiration, m)
-		exc = newCache(NoExpiration, m)
+		nec = newCache(NoExpiration, unlinkCycle, m)
+		exc = newCache(NoExpiration, unlinkCycle, m)
 	} else {
-		exc = newCache(defaultExpiration, m)
+		exc = newCache(defaultExpiration, unlinkCycle, m)
 		nec = exc
 	}
 
 	// clean expired data twice each second
-	cl := defaultCleaner(500 * time.Millisecond)
+	cl := defaultCleaner(cleanCycle)
 	C := &Cache{
 		neCache:  nec,
 		exCache:  exc,
@@ -39,7 +38,7 @@ func NewCache(defaultExpiration time.Duration, m map[string]Item) *Cache {
 	}
 
 	// create a new executor
-	exec := newExecutor(C, uint8(2*runtime.NumCPU()))
+	exec := newExecutor(C, concurrency)
 	C.executor = exec
 
 	// start the daemon cleaner
@@ -159,7 +158,9 @@ func (c *Cache) unlink(key string) {
 func (c *Cache) incr(key string) error {
 	err := c.neCache.incrby(key, 1)
 	if err != nil {
-		return c.exCache.incrby(key, 1)
+		if c.exCache != c.neCache {
+			return c.exCache.incrby(key, 1)
+		}
 	}
 	return err
 }
@@ -171,7 +172,9 @@ func (c *Cache) incrby(key string, s string) error {
 	}
 	err = c.neCache.incrby(key, n)
 	if err != nil {
-		return c.exCache.incrby(key, n)
+		if c.exCache != c.neCache {
+			return c.exCache.incrby(key, n)
+		}
 	}
 	return err
 }
