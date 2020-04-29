@@ -1,5 +1,6 @@
-### TailorKV v0.2.0
+### TailorKV v0.3.0
 + #### New feature
-  + support more data structures
-  + no starvation
+  + support tailor server
+  + support tailor client
+  + improve tailor SDK
   + ...
