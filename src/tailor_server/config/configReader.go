@@ -1,4 +1,4 @@
-package tailor_server
+package config
 
 import (
 	"encoding/xml"
