@@ -2,8 +2,8 @@ package config
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
@@ -20,21 +20,21 @@ type TailorConfig struct {
 func GetConfig(path string) *TailorConfig {
 	file, err := os.Open(path) // For read access.
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		log.Fatal(err)
 		return nil
 	}
 
 	defer file.Close()
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		log.Fatal(err)
 		return nil
 	}
 
 	tailorConf := TailorConfig{}
 	err = xml.Unmarshal(data, &tailorConf)
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		log.Fatal(err)
 		return nil
 	}
 
