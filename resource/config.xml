@@ -1,5 +1,5 @@
 <config>
-    <!--    negative numbers represent no expiration-->
+    <!--    negative numbers represent no expiration (millisecond)-->
     <defaultExpiration>-1</defaultExpiration>
 
     <!--    clean up cycle of the daemon cleaner which cleans the expired data (millisecond)-->
