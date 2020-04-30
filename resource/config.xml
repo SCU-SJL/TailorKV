@@ -12,7 +12,7 @@
     <concurrency>default</concurrency>
 
     <!--    path to have persistent files-->
-    <savingPath>C:\\SJL\\Projects\\Github\\TailorFiles</savingPath>
+    <savingPath>C:\\SJL\\Projects\\Github\\TailorFiles\\</savingPath>
 
     <!--    name of the persistent files-->
     <fileName>tailorBackUp.tkv</fileName>
