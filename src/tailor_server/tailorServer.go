@@ -1,13 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"net"
 	"os"
 	"runtime"
 	"strconv"
 	"tailor"
 	"tailor_server/config"
+	"tailor_server/handler"
 	"time"
 )
 
@@ -17,7 +18,6 @@ var (
 	asyncCleanCycle   time.Duration
 	concurrency       uint8
 	savingPath        string
-	fileName          string
 )
 
 func main() {
@@ -30,6 +30,18 @@ func main() {
 	cache := tailor.NewCache(defaultExpiration, cleanCycle, asyncCleanCycle, concurrency, nil)
 
 	// start server
+	listener, err := net.Listen("tcp", "localhost:8448")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			cache.Save(savingPath, nil)
+			log.Fatal(err)
+		}
+		go handler.HandleConn(conn, cache, savingPath)
+	}
 }
 
 func resolveConfig(conf config.TailorConfig) {
@@ -63,8 +75,7 @@ func resolveConfig(conf config.TailorConfig) {
 		concurrency = uint8(i)
 	}
 
-	savingPath = conf.SavingPath
-	fileName = conf.FileName
+	savingPath = conf.SavingPath + conf.FileName
 }
 
 func parseStr(str string) int64 {
