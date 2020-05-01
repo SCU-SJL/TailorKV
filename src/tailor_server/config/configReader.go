@@ -9,6 +9,7 @@ import (
 
 type TailorConfig struct {
 	XMLName           xml.Name `xml:"config"`
+	MaxSizeofDatagram string   `xml:"maxSizeOfDatagram"`
 	DefaultExpiration string   `xml:"defaultExpiration"`
 	CleanCycle        string   `xml:"cleanCycle"`
 	AsyncCleanCycle   string   `xml:"asyncCleanCycle"`
