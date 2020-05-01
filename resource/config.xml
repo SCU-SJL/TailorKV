@@ -1,4 +1,9 @@
 <config>
+    <!--    max size of datagram (bytes). -->
+    <!--    a datagram consists of command id, key, val and expiration-->
+    <!--    you should make sure the params (especially key and val) won't exceed the length limit-->
+    <maxSizeOfDatagram>4096</maxSizeOfDatagram>
+
     <!--    negative numbers represent no expiration (millisecond)-->
     <defaultExpiration>-1</defaultExpiration>
 
