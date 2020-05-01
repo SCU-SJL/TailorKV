@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
+	"protocol"
 )
 
 func main() {
@@ -14,6 +16,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, _ = conn.Write([]byte{0})
-	_, _ = conn.Write([]byte("name sjl 5000"))
+	data := &protocol.Protocol{
+		Op:  0,
+		Key: "name",
+		Val: "Jack Ma",
+		Exp: "500",
+	}
+	datagram, _ := data.GetJsonBytes()
+	_, _ = conn.Write(datagram)
+	errMsg := make([]byte, 1)
+	_, _ = conn.Read(errMsg)
+	fmt.Println(errMsg[0])
 }

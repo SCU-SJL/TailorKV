@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	maxSizeOfDatagram int
 	defaultExpiration time.Duration
 	cleanCycle        time.Duration
 	asyncCleanCycle   time.Duration
@@ -40,11 +41,13 @@ func main() {
 			cache.Save(savingPath, nil)
 			log.Fatal(err)
 		}
-		go handler.HandleConn(conn, cache, savingPath)
+		go handler.HandleConn(conn, cache, savingPath, maxSizeOfDatagram)
 	}
 }
 
 func resolveConfig(conf config.TailorConfig) {
+	maxSizeOfDatagram = int(parseStr(conf.MaxSizeofDatagram))
+
 	i := parseStr(conf.DefaultExpiration)
 	if i <= 0 {
 		defaultExpiration = tailor.NoExpiration
