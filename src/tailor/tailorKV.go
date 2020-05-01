@@ -210,7 +210,7 @@ func (c *Cache) Keys(exp string) ([]KV, error) {
 // Save param ok must be a chan with length of 2
 func (c *Cache) Save(filename string, ok chan bool) {
 	go func() {
-		err := c.neCache.saveFile("NE" + filename)
+		err := c.neCache.saveFile(filename + "ne")
 		if err != nil {
 			ok <- false
 		}
@@ -218,7 +218,7 @@ func (c *Cache) Save(filename string, ok chan bool) {
 	}()
 	if c.exCache != c.neCache {
 		go func() {
-			err := c.exCache.saveFile("EX" + filename)
+			err := c.exCache.saveFile(filename + "ex")
 			if err != nil {
 				ok <- false
 			}
