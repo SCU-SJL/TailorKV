@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"encoding/json"
 	"net"
+	"protocol"
 	"tailor"
 )
 
@@ -19,23 +21,31 @@ const (
 	cnt
 )
 
-func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string) {
+func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOfDatagram int) {
 	defer cache.Save(savingPath, nil)
-	over := false
-	for !over {
-		op, err := readCommand(conn)
+	for {
+		datagram, err := readDatagram(conn, maxSizeOfDatagram)
 		if err != nil {
 			break
 		}
-		switch op {
+		switch datagram.Op {
 		case setex:
-			doSetex(conn, cache)
+			doSetex(cache, datagram, conn)
 		}
 	}
 }
 
-func readCommand(conn net.Conn) (byte, error) {
-	op := make([]byte, 1)
-	_, err := conn.Read(op)
-	return op[0], err
+func readDatagram(conn net.Conn, maxSize int) (*protocol.Protocol, error) {
+	buf := make([]byte, maxSize)
+	n, err := conn.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	var datagram protocol.Protocol
+	err = json.Unmarshal(buf[:n], &datagram)
+	if err != nil {
+		return nil, err
+	}
+	return &datagram, nil
 }

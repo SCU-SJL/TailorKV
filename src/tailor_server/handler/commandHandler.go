@@ -2,42 +2,23 @@ package handler
 
 import (
 	"fmt"
-	"log"
 	"net"
+	"protocol"
 	"strconv"
-	"strings"
 	"tailor"
 	"time"
 )
 
-func readParam(conn net.Conn, n int) ([]string, error) {
-	in := make([]byte, 64)
-	nBytes, err := conn.Read(in)
+func doSetex(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	key := datagram.Key
+	val := datagram.Val
+	exp, err := strconv.ParseInt(datagram.Exp, 10, 64)
 	if err != nil {
-		return nil, err
-	}
-	params := string(in[:nBytes])
-	fmt.Println(params)
-	res := strings.Split(params, " ")
-	if len(res) != n {
-		return nil, fmt.Errorf("syntax error, expected %d params, actual: %d params", n, len(res))
-	}
-	return res, err
-}
-
-func doSetex(conn net.Conn, cache *tailor.Cache) {
-	params, err := readParam(conn, 3)
-	if err != nil {
-		log.Fatal(err)
-		// ...
-	}
-	fmt.Println(params)
-	key := params[0]
-	val := params[1]
-	exp, err := strconv.ParseInt(params[2], 10, 64)
-	if err != nil {
-		fmt.Println(err)
-		// ...
+		errMsg := []byte{1}
+		_, _ = conn.Write(errMsg)
+		return
 	}
 	cache.Setex(key, val, time.Duration(exp)*time.Millisecond)
+	_, _ = conn.Write([]byte{0})
+	fmt.Println(cache.Get(key))
 }
