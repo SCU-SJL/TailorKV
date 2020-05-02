@@ -129,16 +129,16 @@ func (c *Cache) setex(key string, val interface{}, t time.Duration) {
 	c.exCache.set(key, val, t)
 }
 
-func (c *Cache) get(key string) interface{} {
+func (c *Cache) get(key string) (interface{}, bool) {
 	val, ok := c.neCache.get(key)
 	if ok {
-		return val
+		return val, true
 	}
 	val, ok = c.exCache.get(key)
 	if ok {
-		return val
+		return val, true
 	}
-	return nil
+	return nil, false
 }
 
 func (c *Cache) del(key string) {
