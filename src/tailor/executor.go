@@ -71,7 +71,7 @@ func (exc *executor) server() {
 			go func() {
 				if exc.isReady() {
 					exc.addCount(true)
-					j.res.value = exc.c.get(j.key)
+					j.res.value, j.res.ok = exc.c.get(j.key)
 					close(j.done)
 					exc.addCount(false)
 				} else {
