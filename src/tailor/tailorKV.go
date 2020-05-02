@@ -288,7 +288,7 @@ func (c *Cache) Setex(key string, val interface{}, exp time.Duration) {
 	c.executor.execute(newJob)
 }
 
-func (c *Cache) Get(key string) interface{} {
+func (c *Cache) Get(key string) (interface{}, bool) {
 	newJob := &job{
 		op:   get,
 		key:  key,
@@ -297,7 +297,7 @@ func (c *Cache) Get(key string) interface{} {
 	}
 	c.executor.execute(newJob)
 	<-newJob.done
-	return newJob.res.value
+	return newJob.res.value, newJob.res.ok
 }
 
 func (c *Cache) Del(key string) {
