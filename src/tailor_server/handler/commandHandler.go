@@ -12,6 +12,7 @@ const (
 	Success byte = iota
 	SyntaxErr
 	NotFound
+	Existed
 )
 
 func doSetex(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
@@ -25,6 +26,17 @@ func doSetex(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	}
 	cache.Setex(key, val, time.Duration(exp)*time.Millisecond)
 	_, _ = conn.Write([]byte{Success})
+}
+
+func doSetnx(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	key := datagram.Key
+	val := datagram.Val
+	ok := cache.Setnx(key, val)
+	if ok {
+		_, _ = conn.Write([]byte{Success})
+		return
+	}
+	_, _ = conn.Write([]byte{Existed})
 }
 
 func doGet(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
