@@ -121,6 +121,10 @@ func (c *Cache) set(key string, val interface{}) {
 }
 
 func (c *Cache) setnx(key string, val interface{}) bool {
+	_, found := c.exCache.get(key)
+	if found {
+		return false
+	}
 	err := c.neCache.setnx(key, val, DefaultExpiration)
 	return err == nil
 }
