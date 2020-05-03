@@ -21,6 +21,8 @@ const (
 	cnt
 )
 
+var errType = []string{"Success", "SyntaxErr", "NotFound", "Existed"}
+
 func main() {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", "localhost:8448")
 	if err != nil {
@@ -30,40 +32,48 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//testSetex(conn)
+	testSetex(conn)
 	testGet(conn)
+	testSetnx(conn)
 }
 
 func testSetex(conn net.Conn) {
-
-	data := &protocol.Protocol{
-		Op:  setex,
-		Key: "name",
-		Val: "Jack Ma",
-		Exp: "5000",
-	}
-	datagram, _ := data.GetJsonBytes()
+	datagram := getDatagram(setex, "name", "Jack Ma", "5000")
 	_, _ = conn.Write(datagram)
-	errMsg := make([]byte, 1)
-	_, _ = conn.Read(errMsg)
-	fmt.Println("[setex] errMsg =", errMsg[0])
+	printErrMsg("[setex]", conn)
 }
 
 func testGet(conn net.Conn) {
-	data := &protocol.Protocol{
-		Op:  get,
-		Key: "name",
-		Val: "",
-		Exp: "",
-	}
-	datagram, _ := data.GetJsonBytes()
+	datagram := getDatagram(get, "name", "", "")
 	_, _ = conn.Write(datagram)
-	errMsg := make([]byte, 1)
-	_, _ = conn.Read(errMsg)
-	fmt.Println("[get] errMsg = ", errMsg[0])
-	if errMsg[0] == 0 {
+	errMsg := printErrMsg("[get]", conn)
+	if errMsg == 0 {
 		buf := make([]byte, 4096)
 		n, _ := conn.Read(buf)
 		fmt.Println("[get] name = ", string(buf[:n]))
 	}
+}
+
+func testSetnx(conn net.Conn) {
+	datagram := getDatagram(setnx, "name", "Pony Ma", "")
+	_, _ = conn.Write(datagram)
+	printErrMsg("[setnx]", conn)
+}
+
+func getDatagram(op byte, key, val, exp string) []byte {
+	data := &protocol.Protocol{
+		Op:  op,
+		Key: key,
+		Val: val,
+		Exp: exp,
+	}
+	datagram, _ := data.GetJsonBytes()
+	return datagram
+}
+
+func printErrMsg(opName string, conn net.Conn) byte {
+	errMsg := make([]byte, 1)
+	_, _ = conn.Read(errMsg)
+	fmt.Printf("%s errMsg = %s\n", opName, errType[errMsg[0]])
+	return errMsg[0]
 }
