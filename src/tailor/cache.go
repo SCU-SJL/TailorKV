@@ -119,12 +119,12 @@ func (c *cache) set(key string, val interface{}, lastFor time.Duration) {
 }
 
 func (c *cache) setnx(key string, val interface{}, lastFor time.Duration) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
 	_, found := c.find(key)
 	if found {
 		return fmt.Errorf("item %s already exists", key)
 	}
+	c.mu.RUnlock()
 	c.set(key, val, lastFor)
 	return nil
 }
