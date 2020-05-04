@@ -32,9 +32,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	testSet(conn)
+	testGet(conn)
+
 	testSetex(conn)
 	testGet(conn)
+
 	testSetnx(conn)
+	testGet(conn)
 }
 
 func testSetex(conn net.Conn) {
@@ -52,6 +57,12 @@ func testGet(conn net.Conn) {
 		n, _ := conn.Read(buf)
 		fmt.Println("[get] name = ", string(buf[:n]))
 	}
+}
+
+func testSet(conn net.Conn) {
+	datagram := getDatagram(set, "name", "Jimmy S", "")
+	_, _ = conn.Write(datagram)
+	printErrMsg("[set]", conn)
 }
 
 func testSetnx(conn net.Conn) {
