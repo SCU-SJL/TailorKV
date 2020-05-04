@@ -87,7 +87,6 @@ func newCache(de, asyncCycle time.Duration, m map[string]Item) *cache {
 		items:             m,
 		asyncCleaner:      asyncCl,
 	}
-	fmt.Println("new cache")
 	go c.asyncCleaner.run(c)
 	return c
 }
