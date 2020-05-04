@@ -87,6 +87,8 @@ func newCache(de, asyncCycle time.Duration, m map[string]Item) *cache {
 		items:             m,
 		asyncCleaner:      asyncCl,
 	}
+	fmt.Println("new cache")
+	go c.asyncCleaner.run(c)
 	return c
 }
 
@@ -275,9 +277,6 @@ func (c *cache) unlink(key string) {
 	}
 	item.Expiration = 0
 	c.asyncQueue.Offer(key)
-	if c.asyncCleaner.isStopped() {
-		go c.asyncCleaner.run(c)
-	}
 }
 
 func (c *cache) doDel(key string) (interface{}, bool) {
