@@ -118,6 +118,9 @@ func (c *Cache) AddDelHandler(f func(key string, val interface{})) {
 
 func (c *Cache) set(key string, val interface{}) {
 	c.neCache.set(key, val, DefaultExpiration)
+	if c.exCache != c.neCache {
+		c.exCache.del(key)
+	}
 }
 
 func (c *Cache) setnx(key string, val interface{}) bool {
@@ -125,12 +128,15 @@ func (c *Cache) setnx(key string, val interface{}) bool {
 	if found {
 		return false
 	}
-	err := c.neCache.setnx(key, val, DefaultExpiration)
-	return err == nil
+	ok := c.neCache.setnx(key, val, DefaultExpiration)
+	return ok
 }
 
 func (c *Cache) setex(key string, val interface{}, t time.Duration) {
 	c.exCache.set(key, val, t)
+	if c.neCache != c.exCache {
+		c.neCache.del(key)
+	}
 }
 
 func (c *Cache) get(key string) (interface{}, bool) {
