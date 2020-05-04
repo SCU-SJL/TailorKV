@@ -39,6 +39,13 @@ func doSetnx(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	_, _ = conn.Write([]byte{Existed})
 }
 
+func doSet(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	key := datagram.Key
+	val := datagram.Val
+	cache.Set(key, val)
+	_, _ = conn.Write([]byte{Success})
+}
+
 func doGet(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	key := datagram.Key
 	val, found := cache.Get(key)

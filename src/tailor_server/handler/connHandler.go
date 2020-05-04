@@ -33,6 +33,8 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOf
 			doSetex(cache, datagram, conn)
 		case setnx:
 			doSetnx(cache, datagram, conn)
+		case set:
+			doSet(cache, datagram, conn)
 		case get:
 			doGet(cache, datagram, conn)
 		}
