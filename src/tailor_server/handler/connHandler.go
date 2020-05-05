@@ -37,6 +37,14 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOf
 			doSet(cache, datagram, conn)
 		case get:
 			doGet(cache, datagram, conn)
+		case del:
+			doDel(cache, datagram, conn)
+		case unlink:
+			doUnlink(cache, datagram, conn)
+		case incr:
+			doIncr(cache, datagram, conn)
+		case incrby:
+			doIncrby(cache, datagram, conn)
 		}
 	}
 }

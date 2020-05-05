@@ -56,3 +56,38 @@ func doGet(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	_, _ = conn.Write([]byte{Success})
 	_, _ = conn.Write([]byte(val.(string)))
 }
+
+func doDel(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	key := datagram.Key
+	cache.Del(key)
+	_, _ = conn.Write([]byte{Success})
+}
+
+func doUnlink(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	key := datagram.Key
+	cache.Unlink(key)
+	_, _ = conn.Write([]byte{Success})
+}
+
+func doIncr(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	key := datagram.Key
+	err := cache.Incr(key)
+	if err != nil {
+		buf := []byte(err.Error())
+		_, _ = conn.Write(buf)
+		return
+	}
+	_, _ = conn.Write([]byte{Success})
+}
+
+func doIncrby(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	key := datagram.Key
+	val := datagram.Val
+	err := cache.Incrby(key, val)
+	if err != nil {
+		buf := []byte(err.Error())
+		_, _ = conn.Write(buf)
+		return
+	}
+	_, _ = conn.Write([]byte{Success})
+}
