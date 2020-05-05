@@ -116,8 +116,12 @@ func getDatagram(op byte, key, val, exp string) []byte {
 }
 
 func printErrMsg(opName string, conn net.Conn) byte {
-	errMsg := make([]byte, 1)
-	_, _ = conn.Read(errMsg)
-	fmt.Printf("%s errMsg = %s\n", opName, errType[errMsg[0]])
+	errMsg := make([]byte, 32)
+	n, _ := conn.Read(errMsg)
+	if n == 1 {
+		fmt.Printf("%s errMsg = %s\n", opName, errType[errMsg[0]])
+	} else {
+		fmt.Printf("%s errMsg = %s\n", opName, errMsg[:n])
+	}
 	return errMsg[0]
 }
