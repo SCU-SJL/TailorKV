@@ -166,10 +166,10 @@ func (c *Cache) unlink(key string) {
 }
 
 func (c *Cache) incr(key string) error {
-	err := c.neCache.incrby(key, 1)
+	err := c.neCache.sIncrby(key, 1)
 	if err != nil {
 		if c.exCache != c.neCache {
-			return c.exCache.incrby(key, 1)
+			return c.exCache.sIncrby(key, 1)
 		}
 	}
 	return err
@@ -180,10 +180,10 @@ func (c *Cache) incrby(key string, s string) error {
 	if err != nil {
 		return err
 	}
-	err = c.neCache.incrby(key, n)
+	err = c.neCache.sIncrby(key, n)
 	if err != nil {
 		if c.exCache != c.neCache {
-			return c.exCache.incrby(key, n)
+			return c.exCache.sIncrby(key, n)
 		}
 	}
 	return err
