@@ -46,6 +46,7 @@ const (
 	MinInt64 = ^MaxInt64
 )
 
+// TODO add status to Item
 type Item struct {
 	Data       interface{}
 	Expiration int64
