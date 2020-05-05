@@ -35,11 +35,16 @@ func main() {
 	testSet(conn)
 	testGet(conn)
 
-	testSetex(conn)
+	//testSetex(conn)
+	//testGet(conn)
+	//
+	//testSetnx(conn)
+	//testGet(conn)
+
+	testUnlink(conn)
+	//<-time.After(2*time.Second)
 	testGet(conn)
 
-	testSetnx(conn)
-	testGet(conn)
 }
 
 func testSetex(conn net.Conn) {
@@ -60,7 +65,7 @@ func testGet(conn net.Conn) {
 }
 
 func testSet(conn net.Conn) {
-	datagram := getDatagram(set, "name", "Jimmy S", "")
+	datagram := getDatagram(set, "name", "SJL", "")
 	_, _ = conn.Write(datagram)
 	printErrMsg("[set]", conn)
 }
@@ -69,6 +74,30 @@ func testSetnx(conn net.Conn) {
 	datagram := getDatagram(setnx, "name", "Pony Ma", "")
 	_, _ = conn.Write(datagram)
 	printErrMsg("[setnx]", conn)
+}
+
+func testDel(conn net.Conn) {
+	datagram := getDatagram(del, "name", "", "")
+	_, _ = conn.Write(datagram)
+	printErrMsg("[del]", conn)
+}
+
+func testUnlink(conn net.Conn) {
+	datagram := getDatagram(unlink, "name", "", "")
+	_, _ = conn.Write(datagram)
+	printErrMsg("[unlink]", conn)
+}
+
+func testIncr(conn net.Conn) {
+	datagram := getDatagram(incr, "age", "", "")
+	_, _ = conn.Write(datagram)
+	printErrMsg("[incr]", conn)
+}
+
+func testIncrby(conn net.Conn) {
+	datagram := getDatagram(incrby, "age", "2", "")
+	_, _ = conn.Write(datagram)
+	printErrMsg("[incrby]", conn)
 }
 
 func getDatagram(op byte, key, val, exp string) []byte {
