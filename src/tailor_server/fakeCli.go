@@ -33,7 +33,7 @@ func main() {
 		log.Fatal(err)
 	}
 	testSet(conn)
-	testGet(conn)
+	testGet(conn, "age")
 
 	//testSetex(conn)
 	//testGet(conn)
@@ -41,10 +41,14 @@ func main() {
 	//testSetnx(conn)
 	//testGet(conn)
 
-	testUnlink(conn)
+	//testUnlink(conn)
 	//<-time.After(2*time.Second)
-	testGet(conn)
+	//testGet(conn)
 
+	testIncr(conn)
+	testGet(conn, "age")
+	testIncrby(conn)
+	testGet(conn, "age")
 }
 
 func testSetex(conn net.Conn) {
@@ -53,8 +57,8 @@ func testSetex(conn net.Conn) {
 	printErrMsg("[setex]", conn)
 }
 
-func testGet(conn net.Conn) {
-	datagram := getDatagram(get, "name", "", "")
+func testGet(conn net.Conn, key string) {
+	datagram := getDatagram(get, key, "", "")
 	_, _ = conn.Write(datagram)
 	errMsg := printErrMsg("[get]", conn)
 	if errMsg == 0 {
@@ -65,7 +69,7 @@ func testGet(conn net.Conn) {
 }
 
 func testSet(conn net.Conn) {
-	datagram := getDatagram(set, "name", "SJL", "")
+	datagram := getDatagram(set, "age", "20", "")
 	_, _ = conn.Write(datagram)
 	printErrMsg("[set]", conn)
 }
