@@ -159,6 +159,7 @@ func (c *cache) ttl(key string) (time.Duration, bool) {
 	return time.Unix(0, item.Expiration).Sub(time.Now()), true
 }
 
+// TODO use string instead of number
 func (c *cache) incrby(key string, n int64) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
