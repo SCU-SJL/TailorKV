@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"protocol"
 	"tailor"
@@ -22,7 +23,12 @@ const (
 )
 
 func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOfDatagram int) {
-	defer cache.Save(savingPath, nil)
+	defer func() {
+		kvs, _ := cache.Keys("[A-z]+")
+		for i := range kvs {
+			fmt.Printf("key: %s, val: %v\n", kvs[i].Key(), kvs[i].Val())
+		}
+	}()
 	for {
 		datagram, err := readDatagram(conn, maxSizeOfDatagram)
 		if err != nil {
