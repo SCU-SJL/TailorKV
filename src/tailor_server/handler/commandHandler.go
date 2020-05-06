@@ -52,8 +52,12 @@ func doGet(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	if !found {
 		_, _ = conn.Write([]byte{NotFound})
 		return
+	} else {
+		_, err := conn.Write([]byte{Success})
+		if err != nil {
+			return
+		}
 	}
-	_, _ = conn.Write([]byte{Success})
 	_, _ = conn.Write([]byte(val.(string)))
 }
 
