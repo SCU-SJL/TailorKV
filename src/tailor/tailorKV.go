@@ -166,27 +166,46 @@ func (c *Cache) unlink(key string) {
 }
 
 func (c *Cache) incr(key string) error {
-	err := c.neCache.sIncrby(key, 1)
-	if err != nil {
+	info := c.neCache.sIncrby(key, 1)
+	if info == 2 {
+		return incrErr(key, info)
+	}
+	if info == 1 {
 		if c.exCache != c.neCache {
-			return c.exCache.sIncrby(key, 1)
+			info = c.exCache.sIncrby(key, 1)
+			return incrErr(key, info)
 		}
 	}
-	return err
+	return nil
 }
 
 func (c *Cache) incrby(key string, s string) error {
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("addition '%s' cannot be parsed to int64", s)
 	}
-	err = c.neCache.sIncrby(key, n)
-	if err != nil {
+	info := c.neCache.sIncrby(key, n)
+	if info == 2 {
+		return incrErr(key, info)
+	}
+	if info == 1 {
 		if c.exCache != c.neCache {
-			return c.exCache.sIncrby(key, n)
+			info = c.exCache.sIncrby(key, n)
+			return incrErr(key, info)
 		}
 	}
-	return err
+	return nil
+}
+
+func incrErr(key string, info byte) error {
+	switch info {
+	case 1:
+		return fmt.Errorf("key '%s' does not exist", key)
+	case 2:
+		return fmt.Errorf("value of '%s' cannot be parsed to int64", key)
+	default:
+		return nil
+	}
 }
 
 func (c *Cache) ttl(key string) (time.Duration, bool) {
