@@ -160,22 +160,22 @@ func (c *cache) ttl(key string) (time.Duration, bool) {
 	return time.Unix(0, item.Expiration).Sub(time.Now()), true
 }
 
-func (c *cache) sIncrby(key string, n int64) error {
+func (c *cache) sIncrby(key string, n int64) byte {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	item, found := c.find(key)
 	if !found {
-		return fmt.Errorf("item %s does not exist", key)
+		return 1
 	}
 	before, err := strconv.ParseInt(item.Data.(string), 10, 64)
 	if err != nil {
-		return fmt.Errorf("value of '%s' cannot be parsed to int64", key)
+		return 2
 	}
 	before += n
 	after := strconv.FormatInt(before, 10)
 	item.Data = after
 	c.items[key] = item
-	return nil
+	return 0
 }
 
 func (c *cache) incrby(key string, n int64) error {
