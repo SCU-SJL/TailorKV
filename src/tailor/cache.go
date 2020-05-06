@@ -113,18 +113,18 @@ func (c *cache) set(key string, val interface{}, lastFor time.Duration) {
 		ex = -1
 	}
 	c.mu.Lock()
-	// it seems that 'defer' adds ~200ns (saw on github)
-	defer c.mu.Unlock()
 	c.items[key] = Item{
 		Data:       val,
 		Expiration: ex,
 	}
+	c.mu.Unlock()
 }
 
 func (c *cache) setnx(key string, val interface{}, lastFor time.Duration) bool {
 	c.mu.RLock()
 	_, found := c.find(key)
 	if found {
+		c.mu.RUnlock()
 		return false
 	}
 	c.mu.RUnlock()
