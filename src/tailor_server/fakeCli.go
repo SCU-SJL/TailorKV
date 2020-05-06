@@ -32,7 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	testSet(conn)
+	testSet(conn, "age", "abc")
 	testGet(conn, "age")
 
 	//testSetex(conn)
@@ -45,63 +45,66 @@ func main() {
 	//<-time.After(2*time.Second)
 	//testGet(conn)
 
-	testIncr(conn)
+	testIncr(conn, "age")
+	testSet(conn, "age", "23")
+	testIncrby(conn, "age", "23")
 	testGet(conn, "age")
-	testIncrby(conn)
+
+	testSetnx(conn, "age", "55")
 	testGet(conn, "age")
 }
 
-func testSetex(conn net.Conn) {
-	datagram := getDatagram(setex, "name", "Jack Ma", "5000")
+func testSetex(conn net.Conn, key, val string) {
+	datagram := getDatagram(setex, key, val, "5000")
 	_, _ = conn.Write(datagram)
-	printErrMsg("[setex]", conn)
+	printErrMsg("[setex] "+key+"-"+val, conn)
 }
 
 func testGet(conn net.Conn, key string) {
 	datagram := getDatagram(get, key, "", "")
 	_, _ = conn.Write(datagram)
-	errMsg := printErrMsg("[get]", conn)
+	errMsg := printErrMsg("[get] "+key, conn)
 	if errMsg == 0 {
 		buf := make([]byte, 4096)
 		n, _ := conn.Read(buf)
-		fmt.Println("[get] name = ", string(buf[:n]))
+		fmt.Printf("[get] %s = %s\n", key, string(buf[:n]))
 	}
 }
 
-func testSet(conn net.Conn) {
-	datagram := getDatagram(set, "age", "20", "")
+func testSet(conn net.Conn, key, val string) {
+	datagram := getDatagram(set, key, val, "")
 	_, _ = conn.Write(datagram)
-	printErrMsg("[set]", conn)
+	printErrMsg("[set] "+key+"-"+val, conn)
 }
 
-func testSetnx(conn net.Conn) {
-	datagram := getDatagram(setnx, "name", "Pony Ma", "")
+func testSetnx(conn net.Conn, key, val string) {
+	datagram := getDatagram(setnx, key, val, "")
 	_, _ = conn.Write(datagram)
-	printErrMsg("[setnx]", conn)
+	printErrMsg("[setnx] "+key+"-"+val, conn)
 }
 
-func testDel(conn net.Conn) {
-	datagram := getDatagram(del, "name", "", "")
+func testDel(conn net.Conn, key string) {
+	datagram := getDatagram(del, key, "", "")
 	_, _ = conn.Write(datagram)
-	printErrMsg("[del]", conn)
+	printErrMsg("[del] "+key, conn)
 }
 
-func testUnlink(conn net.Conn) {
-	datagram := getDatagram(unlink, "name", "", "")
+func testUnlink(conn net.Conn, key string) {
+	datagram := getDatagram(unlink, key, "", "")
 	_, _ = conn.Write(datagram)
-	printErrMsg("[unlink]", conn)
+	printErrMsg("[unlink] "+key, conn)
 }
 
-func testIncr(conn net.Conn) {
-	datagram := getDatagram(incr, "age", "", "")
+func testIncr(conn net.Conn, key string) {
+	datagram := getDatagram(incr, key, "", "")
 	_, _ = conn.Write(datagram)
-	printErrMsg("[incr]", conn)
+	printErrMsg("[incr] "+key, conn)
 }
 
-func testIncrby(conn net.Conn) {
-	datagram := getDatagram(incrby, "age", "2", "")
+func testIncrby(conn net.Conn, key, val string) {
+	datagram := getDatagram(incrby, key, val, "")
 	_, _ = conn.Write(datagram)
-	printErrMsg("[incrby]", conn)
+	printErrMsg("[incrby] "+key+" with "+val, conn)
 }
 
 func getDatagram(op byte, key, val, exp string) []byte {
@@ -116,7 +119,7 @@ func getDatagram(op byte, key, val, exp string) []byte {
 }
 
 func printErrMsg(opName string, conn net.Conn) byte {
-	errMsg := make([]byte, 32)
+	errMsg := make([]byte, 64)
 	n, _ := conn.Read(errMsg)
 	if n == 1 {
 		fmt.Printf("%s errMsg = %s\n", opName, errType[errMsg[0]])
