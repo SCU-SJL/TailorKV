@@ -123,11 +123,10 @@ func (c *cache) set(key string, val interface{}, lastFor time.Duration) {
 func (c *cache) setnx(key string, val interface{}, lastFor time.Duration) bool {
 	c.mu.RLock()
 	_, found := c.find(key)
+	c.mu.RUnlock()
 	if found {
-		c.mu.RUnlock()
 		return false
 	}
-	c.mu.RUnlock()
 	c.set(key, val, lastFor)
 	return true
 }
