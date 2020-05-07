@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 	"protocol"
-	"strconv"
+	"time"
 )
 
 const (
@@ -56,15 +56,14 @@ func main() {
 
 	testSetex(conn, "name", "Jack Ma")
 	testSetex(conn, "age", "20")
-	testKeys(conn, "[A-z]+")
-	//testIncrby(conn, "age", "5")
-	//<-time.After(1*time.Second)
-	//testTtl(conn, "name")
-	//testTtl(conn, "age")
-	//testGet(conn, "age")
-	//<-time.After(4*time.Second)
-	//testGet(conn, "name")
-	//testGet(conn,"age")
+	testIncrby(conn, "age", "5")
+	<-time.After(1 * time.Second)
+	testTtl(conn, "name")
+	testTtl(conn, "age")
+	testGet(conn, "age")
+	<-time.After(4 * time.Second)
+	testGet(conn, "name")
+	testGet(conn, "age")
 }
 
 func testSetex(conn net.Conn, key, val string) {
