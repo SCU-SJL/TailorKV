@@ -51,6 +51,8 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOf
 			doIncr(cache, datagram, conn)
 		case incrby:
 			doIncrby(cache, datagram, conn)
+		case ttl:
+			doTtl(cache, datagram, conn)
 		}
 	}
 }

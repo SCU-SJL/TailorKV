@@ -95,3 +95,13 @@ func doIncrby(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	}
 	_, _ = conn.Write([]byte{Success})
 }
+
+func doTtl(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	key := datagram.Key
+	ttl, ok := cache.Ttl(key)
+	if !ok {
+		_, _ = conn.Write([]byte{NotFound})
+	}
+	_, _ = conn.Write([]byte{Success})
+	_, _ = conn.Write([]byte(ttl.String()))
+}
