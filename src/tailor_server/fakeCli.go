@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"protocol"
+	"strconv"
 )
 
 const (
@@ -32,8 +33,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	testSet(conn, "age", "abc")
-	testGet(conn, "age")
+	//testSet(conn, "age", "abc")
+	//testGet(conn, "age")
 
 	//testSetex(conn)
 	//testGet(conn)
@@ -45,13 +46,25 @@ func main() {
 	//<-time.After(2*time.Second)
 	//testGet(conn)
 
-	testIncr(conn, "age")
-	testSet(conn, "age", "23")
-	testIncrby(conn, "age", "23")
-	testGet(conn, "age")
+	//testIncr(conn, "age")
+	//testSet(conn, "age", "23")
+	//testIncrby(conn, "age", "23")
+	//testGet(conn, "age")
+	//
+	//testSetnx(conn, "age", "55")
+	//testGet(conn, "age")
 
-	testSetnx(conn, "age", "55")
-	testGet(conn, "age")
+	testSetex(conn, "name", "Jack Ma")
+	testSetex(conn, "age", "20")
+	testKeys(conn, "[A-z]+")
+	//testIncrby(conn, "age", "5")
+	//<-time.After(1*time.Second)
+	//testTtl(conn, "name")
+	//testTtl(conn, "age")
+	//testGet(conn, "age")
+	//<-time.After(4*time.Second)
+	//testGet(conn, "name")
+	//testGet(conn,"age")
 }
 
 func testSetex(conn net.Conn, key, val string) {
@@ -105,6 +118,17 @@ func testIncrby(conn net.Conn, key, val string) {
 	datagram := getDatagram(incrby, key, val, "")
 	_, _ = conn.Write(datagram)
 	printErrMsg("[incrby] "+key+" with "+val, conn)
+}
+
+func testTtl(conn net.Conn, key string) {
+	datagram := getDatagram(ttl, key, "", "")
+	_, _ = conn.Write(datagram)
+	errMsg := printErrMsg("[ttl] "+key, conn)
+	if errMsg == 0 {
+		buf := make([]byte, 128)
+		n, _ := conn.Read(buf)
+		fmt.Println("[ttl]", key, string(buf[:n]))
+	}
 }
 
 func getDatagram(op byte, key, val, exp string) []byte {
