@@ -19,6 +19,8 @@ const (
 	ttl
 	keys
 	cnt
+	save
+	load
 )
 
 func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOfDatagram int) {
@@ -54,6 +56,10 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOf
 			doTtl(cache, datagram, conn)
 		case cnt:
 			doCnt(cache, conn)
+		case save:
+			doSave(savingPath, cache, conn)
+		case load:
+			doLoad(savingPath, cache, conn)
 		}
 	}
 }

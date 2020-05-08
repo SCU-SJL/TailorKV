@@ -13,6 +13,9 @@ const (
 	SyntaxErr
 	NotFound
 	Existed
+	NeSaveFailed
+	ExSaveFailed
+	LoadFailed
 )
 
 func doSetex(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
@@ -110,4 +113,30 @@ func doCnt(cache *tailor.Cache, conn net.Conn) {
 	cnt := strconv.Itoa(cache.Cnt())
 	_, _ = conn.Write([]byte{Success})
 	_, _ = conn.Write([]byte(cnt))
+}
+
+func doSave(path string, cache *tailor.Cache, conn net.Conn) {
+	status := make(chan bool, 2)
+	cache.Save(path, status)
+
+	if neOk := <-status; !neOk {
+		_, _ = conn.Write([]byte{NeSaveFailed})
+	} else {
+		_, _ = conn.Write([]byte{Success})
+	}
+
+	if exOk := <-status; !exOk {
+		_, _ = conn.Write([]byte{ExSaveFailed})
+	} else {
+		_, _ = conn.Write([]byte{Success})
+	}
+}
+
+func doLoad(path string, cache *tailor.Cache, conn net.Conn) {
+	err := cache.Load(path)
+	if err != nil {
+		_, _ = conn.Write([]byte{LoadFailed})
+	} else {
+		_, _ = conn.Write([]byte{Success})
+	}
 }
