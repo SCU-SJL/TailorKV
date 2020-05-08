@@ -16,7 +16,7 @@ func (p *Protocol) GetJsonBytes() ([]byte, error) {
 	return jsonBytes, err
 }
 
-func ConvertToProtocol(data []byte) (*Protocol, error) {
+func GetDatagram(data []byte) (*Protocol, error) {
 	var p Protocol
 	err := json.Unmarshal(data, &p)
 	if err != nil {
