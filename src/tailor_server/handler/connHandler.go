@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"protocol"
@@ -53,6 +52,8 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOf
 			doIncrby(cache, datagram, conn)
 		case ttl:
 			doTtl(cache, datagram, conn)
+		case cnt:
+			doCnt(cache, conn)
 		}
 	}
 }
@@ -64,10 +65,9 @@ func readDatagram(conn net.Conn, maxSize int) (*protocol.Protocol, error) {
 		return nil, err
 	}
 
-	var datagram protocol.Protocol
-	err = json.Unmarshal(buf[:n], &datagram)
+	datagram, err := protocol.GetDatagram(buf[:n])
 	if err != nil {
 		return nil, err
 	}
-	return &datagram, nil
+	return datagram, nil
 }

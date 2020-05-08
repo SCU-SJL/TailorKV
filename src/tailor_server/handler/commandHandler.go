@@ -105,3 +105,9 @@ func doTtl(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	_, _ = conn.Write([]byte{Success})
 	_, _ = conn.Write([]byte(ttl.String()))
 }
+
+func doCnt(cache *tailor.Cache, conn net.Conn) {
+	cnt := strconv.Itoa(cache.Cnt())
+	_, _ = conn.Write([]byte{Success})
+	_, _ = conn.Write([]byte(cnt))
+}
