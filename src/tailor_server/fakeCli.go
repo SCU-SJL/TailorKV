@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"protocol"
-	"time"
 )
 
 const (
@@ -20,9 +19,11 @@ const (
 	ttl
 	keys
 	cnt
+	save
+	load
 )
 
-var errType = []string{"Success", "SyntaxErr", "NotFound", "Existed"}
+var errType = []string{"Success", "SyntaxErr", "NotFound", "Existed", "NeSaveFailed", "ExSaveFailed", "LoadFailed"}
 
 func main() {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", "localhost:8448")
@@ -54,8 +55,8 @@ func main() {
 	//testSetnx(conn, "age", "55")
 	//testGet(conn, "age")
 
-	testSetex(conn, "name", "Jack Ma")
-	testSetex(conn, "age", "20")
+	//testSetex(conn, "name", "Jack Ma")
+	//testSetex(conn, "age", "20")
 	//testIncrby(conn, "age", "5")
 	//<-time.After(1 * time.Second)
 	//testTtl(conn, "name")
@@ -64,19 +65,26 @@ func main() {
 	//<-time.After(4 * time.Second)
 	//testGet(conn, "name")
 	//testGet(conn, "age")
-	<-time.After(10 * time.Second)
+	//<-time.After(10 * time.Second)
+	//testCnt(conn)
+	//testSave(conn)
+
+	//testSet(conn, "ali", "Jack Ma")
+	//testSet(conn, "tx", "Pony Ma")
+	//testSave(conn)
 	testCnt(conn)
+	testLoad(conn)
+	testGet(conn, "ali")
+	testGet(conn, "tx")
 }
 
 func testSetex(conn net.Conn, key, val string) {
-	datagram := getDatagram(setex, key, val, "5000")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, setex, key, val, "5000")
 	printErrMsg("[setex] "+key+"-"+val, conn)
 }
 
 func testGet(conn net.Conn, key string) {
-	datagram := getDatagram(get, key, "", "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, get, key, "", "")
 	errMsg := printErrMsg("[get] "+key, conn)
 	if errMsg == 0 {
 		buf := make([]byte, 4096)
@@ -86,44 +94,37 @@ func testGet(conn net.Conn, key string) {
 }
 
 func testSet(conn net.Conn, key, val string) {
-	datagram := getDatagram(set, key, val, "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, set, key, val, "")
 	printErrMsg("[set] "+key+"-"+val, conn)
 }
 
 func testSetnx(conn net.Conn, key, val string) {
-	datagram := getDatagram(setnx, key, val, "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, setnx, key, val, "")
 	printErrMsg("[setnx] "+key+"-"+val, conn)
 }
 
 func testDel(conn net.Conn, key string) {
-	datagram := getDatagram(del, key, "", "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, del, key, "", "")
 	printErrMsg("[del] "+key, conn)
 }
 
 func testUnlink(conn net.Conn, key string) {
-	datagram := getDatagram(unlink, key, "", "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, unlink, key, "", "")
 	printErrMsg("[unlink] "+key, conn)
 }
 
 func testIncr(conn net.Conn, key string) {
-	datagram := getDatagram(incr, key, "", "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, incr, key, "", "")
 	printErrMsg("[incr] "+key, conn)
 }
 
 func testIncrby(conn net.Conn, key, val string) {
-	datagram := getDatagram(incrby, key, val, "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, incrby, key, val, "")
 	printErrMsg("[incrby] "+key+" with "+val, conn)
 }
 
 func testTtl(conn net.Conn, key string) {
-	datagram := getDatagram(ttl, key, "", "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, ttl, key, "", "")
 	errMsg := printErrMsg("[ttl] "+key, conn)
 	if errMsg == 0 {
 		buf := make([]byte, 128)
@@ -133,15 +134,25 @@ func testTtl(conn net.Conn, key string) {
 }
 
 func testCnt(conn net.Conn) {
-	datagram := getDatagram(cnt, "", "", "")
-	_, _ = conn.Write(datagram)
+	sendDatagram(conn, cnt, "", "", "")
 	printErrMsg("[cnt]", conn)
 	buf := make([]byte, 16)
 	n, _ := conn.Read(buf)
 	fmt.Println("[cnt] = ", string(buf[:n]))
 }
 
-func getDatagram(op byte, key, val, exp string) []byte {
+func testSave(conn net.Conn) {
+	sendDatagram(conn, save, "", "", "")
+	printErrMsg("[save] -neCache", conn)
+	printErrMsg("[save] -exCache", conn)
+}
+
+func testLoad(conn net.Conn) {
+	sendDatagram(conn, load, "", "", "")
+	printErrMsg("[load]", conn)
+}
+
+func sendDatagram(conn net.Conn, op byte, key, val, exp string) {
 	data := &protocol.Protocol{
 		Op:  op,
 		Key: key,
@@ -149,7 +160,7 @@ func getDatagram(op byte, key, val, exp string) []byte {
 		Exp: exp,
 	}
 	datagram, _ := data.GetJsonBytes()
-	return datagram
+	_, _ = conn.Write(datagram)
 }
 
 func printErrMsg(opName string, conn net.Conn) byte {
