@@ -56,14 +56,16 @@ func main() {
 
 	testSetex(conn, "name", "Jack Ma")
 	testSetex(conn, "age", "20")
-	testIncrby(conn, "age", "5")
-	<-time.After(1 * time.Second)
-	testTtl(conn, "name")
-	testTtl(conn, "age")
-	testGet(conn, "age")
-	<-time.After(4 * time.Second)
-	testGet(conn, "name")
-	testGet(conn, "age")
+	//testIncrby(conn, "age", "5")
+	//<-time.After(1 * time.Second)
+	//testTtl(conn, "name")
+	//testTtl(conn, "age")
+	//testGet(conn, "age")
+	//<-time.After(4 * time.Second)
+	//testGet(conn, "name")
+	//testGet(conn, "age")
+	<-time.After(10 * time.Second)
+	testCnt(conn)
 }
 
 func testSetex(conn net.Conn, key, val string) {
@@ -128,6 +130,15 @@ func testTtl(conn net.Conn, key string) {
 		n, _ := conn.Read(buf)
 		fmt.Println("[ttl]", key, string(buf[:n]))
 	}
+}
+
+func testCnt(conn net.Conn) {
+	datagram := getDatagram(cnt, "", "", "")
+	_, _ = conn.Write(datagram)
+	printErrMsg("[cnt]", conn)
+	buf := make([]byte, 16)
+	n, _ := conn.Read(buf)
+	fmt.Println("[cnt] = ", string(buf[:n]))
 }
 
 func getDatagram(op byte, key, val, exp string) []byte {
