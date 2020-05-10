@@ -134,6 +134,7 @@ func (c *cache) setnx(key string, val interface{}, lastFor time.Duration) bool {
 func (c *cache) find(key string) (Item, bool) {
 	item, found := c.items[key]
 	if !found || item.Expired() {
+		delete(c.items, key)
 		return Item{}, false
 	}
 	return item, true
