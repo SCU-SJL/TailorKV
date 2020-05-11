@@ -253,6 +253,8 @@ func (c *Cache) Save(filename string, ok chan bool) {
 			}
 			ok <- true
 		}()
+	} else {
+		ok <- true
 	}
 }
 
