@@ -25,6 +25,7 @@ const (
 	cnt
 	save
 	load
+	cls
 )
 
 var errType = []string{"Success", "SyntaxErr", "NotFound", "Existed",
@@ -128,6 +129,9 @@ func HandleConn(conn net.Conn) {
 		case "load":
 			sendDatagram(conn, load, command)
 			printErrMsg(conn)
+		case "cls":
+			sendDatagram(conn, cls, command)
+			printErrMsg(conn)
 		}
 	}
 }
@@ -219,7 +223,7 @@ func checkOp(op string) error {
 	switch op {
 	case "set", "setex", "setnx",
 		"get", "del", "unlink", "incr", "incrby",
-		"ttl", "keys", "cnt", "save", "load":
+		"ttl", "keys", "cnt", "save", "load", "cls":
 		return nil
 	default:
 		return errors.New("illegal command: " + op)
@@ -229,7 +233,7 @@ func checkOp(op string) error {
 func checkCommand(op string, size int) error {
 	lenErr := errors.New("wrong number of params")
 	switch op {
-	case "cnt", "save", "load":
+	case "cnt", "save", "load", "cls":
 		if size != 0 {
 			return lenErr
 		}
