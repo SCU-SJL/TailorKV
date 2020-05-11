@@ -74,6 +74,60 @@ func HandleConn(conn net.Conn) {
 				continue
 			}
 			fmt.Println(string(val[:n]))
+		case "del":
+			sendDatagram(conn, del, command)
+			printErrMsg(conn)
+		case "unlink":
+			sendDatagram(conn, unlink, command)
+			printErrMsg(conn)
+		case "incr":
+			sendDatagram(conn, incr, command)
+			printErrMsg(conn)
+		case "incrby":
+			sendDatagram(conn, incrby, command)
+			printErrMsg(conn)
+		case "ttl":
+			sendDatagram(conn, ttl, command)
+			msg := make([]byte, 1)
+			_, err := conn.Read(msg)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			if msg[0] != 0 {
+				fmt.Print(errType[msg[0]])
+			}
+			val := make([]byte, 128)
+			n, err := conn.Read(val)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println(string(val[:n]))
+		case "cnt":
+			sendDatagram(conn, cnt, command)
+			msg := make([]byte, 1)
+			_, err := conn.Read(msg)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			count := make([]byte, 64)
+			n, err := conn.Read(count)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println(string(count[:n]))
+		case "save":
+			sendDatagram(conn, save, command)
+			fmt.Print("NeCache: ")
+			printErrMsg(conn)
+			fmt.Print("ExCache: ")
+			printErrMsg(conn)
+		case "load":
+			sendDatagram(conn, load, command)
+			printErrMsg(conn)
 		}
 	}
 }
