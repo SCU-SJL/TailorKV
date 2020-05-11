@@ -140,3 +140,8 @@ func doLoad(path string, cache *tailor.Cache, conn net.Conn) {
 		_, _ = conn.Write([]byte{Success})
 	}
 }
+
+func doCls(cache *tailor.Cache, conn net.Conn) {
+	cache.Cls()
+	_, _ = conn.Write([]byte{Success})
+}
