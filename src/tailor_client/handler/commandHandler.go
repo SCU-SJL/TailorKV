@@ -26,6 +26,8 @@ const (
 	save
 	load
 	cls
+	exit
+	quit
 )
 
 var errType = []string{"Success", "SyntaxErr", "NotFound", "Existed",
@@ -38,9 +40,9 @@ type Command struct {
 	exp string
 }
 
-func HandleConn(conn net.Conn) {
+func HandleConn(conn net.Conn, ipAddr *string) {
 	for {
-		fmt.Print("localhost:8448-->:")
+		fmt.Print(*ipAddr + ":8448-->:")
 		command, err := readCommand()
 		if err != nil {
 			fmt.Println(err)
@@ -132,6 +134,9 @@ func HandleConn(conn net.Conn) {
 		case "cls":
 			sendDatagram(conn, cls, command)
 			printErrMsg(conn)
+		case "exit", "quit":
+			sendDatagram(conn, exit, command)
+			return
 		}
 	}
 }
@@ -223,7 +228,7 @@ func checkOp(op string) error {
 	switch op {
 	case "set", "setex", "setnx",
 		"get", "del", "unlink", "incr", "incrby",
-		"ttl", "keys", "cnt", "save", "load", "cls":
+		"ttl", "keys", "cnt", "save", "load", "cls", "exit", "quit":
 		return nil
 	default:
 		return errors.New("illegal command: " + op)
@@ -233,7 +238,7 @@ func checkOp(op string) error {
 func checkCommand(op string, size int) error {
 	lenErr := errors.New("wrong number of params")
 	switch op {
-	case "cnt", "save", "load", "cls":
+	case "cnt", "save", "load", "cls", "exit", "quit":
 		if size != 0 {
 			return lenErr
 		}
