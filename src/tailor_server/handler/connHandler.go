@@ -22,6 +22,8 @@ const (
 	save
 	load
 	cls
+	exit
+	quit
 )
 
 func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOfDatagram int) {
@@ -63,6 +65,8 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOf
 			doLoad(savingPath, cache, conn)
 		case cls:
 			doCls(cache, conn)
+		case exit, quit:
+			return
 		}
 	}
 }
