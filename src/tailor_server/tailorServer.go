@@ -23,8 +23,7 @@ var (
 
 func main() {
 	// read configuration
-	conf := config.GetConfig(".." + string(os.PathSeparator) + ".." + string(os.PathSeparator) +
-		"resource" + string(os.PathSeparator) + "config.xml")
+	conf := config.GetConfig(".." + string(os.PathSeparator) + "resource" + string(os.PathSeparator) + "config.xml")
 	resolveConfig(*conf)
 
 	// start tailor
