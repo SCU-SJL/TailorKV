@@ -16,8 +16,8 @@
     <!--    Maximum concurrent volume of tailorKV, default value is 2 * CPU-->
     <concurrency>default</concurrency>
 
-    <!--    path to have persistent files-->
-    <savingPath>C:\\SJL\\Projects\\Github\\TailorFiles\\</savingPath>
+    <!--    dir to save persistent files, please use absolute URL-->
+    <savingDir>C:\\SJL\\Projects\\Github\\TailorFiles\\</savingDir>
 
     <!--    name of the persistent files-->
     <fileName>tailorBackUp.tkv</fileName>
