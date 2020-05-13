@@ -14,7 +14,7 @@ type TailorConfig struct {
 	CleanCycle        string   `xml:"cleanCycle"`
 	AsyncCleanCycle   string   `xml:"asyncCleanCycle"`
 	Concurrency       string   `xml:"concurrency"`
-	SavingPath        string   `xml:"savingPath"`
+	SavingDir         string   `xml:"savingDir"`
 	FileName          string   `xml:"fileName"`
 }
 
