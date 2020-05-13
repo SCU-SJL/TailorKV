@@ -26,7 +26,7 @@ const (
 	quit
 )
 
-func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOfDatagram int) {
+func HandleConn(conn net.Conn, cache *tailor.Cache, savingDir, defaultSavingPath string, maxSizeOfDatagram int) {
 	defer func() {
 		kvs, _ := cache.Keys("[A-z]+")
 		for i := range kvs {
@@ -60,9 +60,9 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingPath string, maxSizeOf
 		case cnt:
 			doCnt(cache, conn)
 		case save:
-			doSave(savingPath, cache, conn)
+			doSave(savingDir, datagram, defaultSavingPath, cache, conn)
 		case load:
-			doLoad(savingPath, cache, conn)
+			doLoad(savingDir, datagram, defaultSavingPath, cache, conn)
 		case cls:
 			doCls(cache, conn)
 		case exit, quit:

@@ -115,10 +115,13 @@ func doCnt(cache *tailor.Cache, conn net.Conn) {
 	_, _ = conn.Write([]byte(cnt))
 }
 
-func doSave(path string, cache *tailor.Cache, conn net.Conn) {
+func doSave(dir string, datagram *protocol.Protocol, path string, cache *tailor.Cache, conn net.Conn) {
 	status := make(chan bool, 2)
-	cache.Save(path, status)
-
+	if datagram.Key == "" {
+		cache.Save(path, status)
+	} else {
+		cache.Save(dir+datagram.Key, status)
+	}
 	if neOk := <-status; !neOk {
 		_, _ = conn.Write([]byte{NeSaveFailed})
 	} else {
@@ -132,8 +135,13 @@ func doSave(path string, cache *tailor.Cache, conn net.Conn) {
 	}
 }
 
-func doLoad(path string, cache *tailor.Cache, conn net.Conn) {
-	err := cache.Load(path)
+func doLoad(dir string, datagram *protocol.Protocol, path string, cache *tailor.Cache, conn net.Conn) {
+	var err error
+	if datagram.Key == "" {
+		err = cache.Load(path)
+	} else {
+		err = cache.Load(dir + datagram.Key)
+	}
 	if err != nil {
 		_, _ = conn.Write([]byte{LoadFailed})
 	} else {
