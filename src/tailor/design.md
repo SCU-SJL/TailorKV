@@ -4,3 +4,8 @@
   + build tailor client
   + improve tailor SDK
   + ...
+  
++ #### Possible feature in the future
+  + tailor-cluster
+  + go SDK for developer
+  + message queue
