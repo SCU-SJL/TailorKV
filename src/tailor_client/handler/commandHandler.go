@@ -46,6 +46,7 @@ func HandleConn(conn net.Conn, ipAddr *string) {
 		command, err := readCommand()
 		if err != nil {
 			fmt.Println(err)
+			fmt.Println()
 			continue
 		}
 		switch command.op {
@@ -190,6 +191,11 @@ func readCommand() (*Command, error) {
 		return nil, err
 	}
 
+	if length > 1 && paramArr[1] == "-h" {
+		printUsage(paramArr[0])
+		return nil, errors.New("check TailorKV document for more info")
+	}
+
 	if length == 1 {
 		err = checkCommand(paramArr[0], 0)
 		if err != nil {
@@ -238,7 +244,7 @@ func checkOp(op string) error {
 func checkCommand(op string, size int) error {
 	lenErr := errors.New("wrong number of params")
 	switch op {
-	case "cnt", "save", "load", "cls", "exit", "quit":
+	case "cnt", "cls", "exit", "quit":
 		if size != 0 {
 			return lenErr
 		}
@@ -254,6 +260,31 @@ func checkCommand(op string, size int) error {
 		if size != 3 {
 			return lenErr
 		}
+	case "save", "load":
+		if size > 1 {
+			return lenErr
+		}
 	}
 	return nil
+}
+
+func printUsage(op string) {
+	fmt.Print("USAGE: ")
+	switch op {
+	case "cnt", "cls", "exit", "quit":
+		fmt.Printf("%s\n", op)
+	case "get", "del", "unlink", "incr", "ttl":
+		fmt.Printf("%s [key]\n", op)
+	case "keys":
+		fmt.Println("keys [regular expression]")
+	case "set", "setnx":
+		fmt.Printf("%s [key] [val]\n", op)
+	case "incrby":
+		fmt.Println("incrby [key] [addition(Integer)]")
+	case "setex":
+		fmt.Println("setex [key] [val] [expiration]")
+	case "save", "load":
+		fmt.Printf("\n%s ## use default filepath\n", op)
+		fmt.Printf("%s [filename]  ## use the given filename(doesn't change the Dir)\n", op)
+	}
 }
