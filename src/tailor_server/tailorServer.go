@@ -30,7 +30,7 @@ func main() {
 	cache := tailor.NewCache(defaultExpiration, cleanCycle, asyncCleanCycle, concurrency, nil)
 
 	// start server
-	listener, err := net.Listen("tcp", "localhost:8448")
+	listener, err := net.Listen("tcp", "0.0.0.0:8448")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func main() {
 			cache.Save(savingPath, nil)
 			log.Fatal(err)
 		}
-		go handler.HandleConn(conn, cache, savingPath, maxSizeOfDatagram)
+		go handler.HandleConn(conn, cache, conf.SavingDir, savingPath, maxSizeOfDatagram)
 	}
 }
 
@@ -77,7 +77,7 @@ func resolveConfig(conf config.TailorConfig) {
 		concurrency = uint8(i)
 	}
 
-	savingPath = conf.SavingPath + conf.FileName
+	savingPath = conf.SavingDir + conf.FileName
 }
 
 func parseStr(str string) int64 {
