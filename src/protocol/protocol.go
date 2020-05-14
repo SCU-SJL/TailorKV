@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"tailor"
 )
 
 type Protocol struct {
@@ -23,4 +24,25 @@ func GetDatagram(data []byte) (*Protocol, error) {
 		return nil, err
 	}
 	return &p, nil
+}
+
+type KeysDatagram struct {
+	Keys []string `json:"keys"`
+}
+
+func (k *KeysDatagram) GetKeysJson(kvs []tailor.KV) ([]byte, error) {
+	for _, kv := range kvs {
+		k.Keys = append(k.Keys, kv.Key())
+	}
+	jsonBytes, err := json.Marshal(k)
+	return jsonBytes, err
+}
+
+func GetKeys(data []byte) ([]string, error) {
+	var k KeysDatagram
+	err := json.Unmarshal(data, &k)
+	if err != nil {
+		return nil, err
+	}
+	return k.Keys, nil
 }
