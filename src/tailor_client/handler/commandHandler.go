@@ -108,6 +108,33 @@ func HandleConn(conn net.Conn, ipAddr *string) {
 				continue
 			}
 			fmt.Println(string(val[:n]))
+		case "keys":
+			sendDatagram(conn, keys, command)
+			msg := make([]byte, 1)
+			_, err := conn.Read(msg)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			if msg[0] != 0 {
+				printErrMsg(conn)
+				continue
+			}
+
+			buf := make([]byte, 1024*1024)
+			n, err := conn.Read(buf)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			arr, err := protocol.GetKeys(buf[:n])
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			for _, k := range arr {
+				fmt.Println(k)
+			}
 		case "cnt":
 			sendDatagram(conn, cnt, command)
 			msg := make([]byte, 1)
