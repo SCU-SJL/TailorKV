@@ -57,6 +57,8 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingDir, defaultSavingPath
 			doIncrby(cache, datagram, conn)
 		case ttl:
 			doTtl(cache, datagram, conn)
+		case keys:
+			doKeys(cache, datagram, conn)
 		case cnt:
 			doCnt(cache, conn)
 		case save:

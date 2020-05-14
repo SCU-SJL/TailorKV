@@ -92,8 +92,7 @@ func doIncrby(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	val := datagram.Val
 	err := cache.Incrby(key, val)
 	if err != nil {
-		buf := []byte(err.Error())
-		_, _ = conn.Write(buf)
+		_, _ = conn.Write([]byte(err.Error()))
 		return
 	}
 	_, _ = conn.Write([]byte{Success})
@@ -107,6 +106,21 @@ func doTtl(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	}
 	_, _ = conn.Write([]byte{Success})
 	_, _ = conn.Write([]byte(ttl.String()))
+}
+
+func doKeys(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
+	expr := datagram.Key
+	kvs, err := cache.Keys(expr)
+	if err != nil {
+		_, _ = conn.Write([]byte{SyntaxErr})
+		_, _ = conn.Write([]byte(err.Error()))
+		return
+	} else {
+		_, _ = conn.Write([]byte{Success})
+		kd := &protocol.KeysDatagram{}
+		jsonBytes, _ := kd.GetKeysJson(kvs)
+		_, _ = conn.Write(jsonBytes)
+	}
 }
 
 func doCnt(cache *tailor.Cache, conn net.Conn) {
