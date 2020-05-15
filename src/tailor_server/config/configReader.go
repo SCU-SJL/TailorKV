@@ -16,6 +16,8 @@ type TailorConfig struct {
 	Concurrency       string   `xml:"concurrency"`
 	SavingDir         string   `xml:"savingDir"`
 	FileName          string   `xml:"fileName"`
+	Auth              string   `xml:"auth"`
+	AuthKey           string   `xml:"authKey"`
 }
 
 func GetConfig(path string) *TailorConfig {
