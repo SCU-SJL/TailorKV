@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net"
 	"os"
@@ -19,6 +20,8 @@ var (
 	asyncCleanCycle   time.Duration
 	concurrency       uint8
 	savingPath        string
+	auth              bool
+	authKey           string
 )
 
 func main() {
@@ -40,7 +43,7 @@ func main() {
 			cache.Save(savingPath, nil)
 			log.Fatal(err)
 		}
-		go handler.HandleConn(conn, cache, conf.SavingDir, savingPath, maxSizeOfDatagram)
+		go handler.HandleConn(conn, cache, conf.SavingDir, savingPath, maxSizeOfDatagram, auth, authKey)
 	}
 }
 
@@ -77,6 +80,14 @@ func resolveConfig(conf config.TailorConfig) {
 		concurrency = uint8(i)
 	}
 
+	if conf.Auth == "true" {
+		auth = true
+	} else if conf.Auth == "false" {
+		auth = false
+	} else {
+		log.Fatal(errors.New("value of 'auth' in config.xml is invalid"))
+	}
+	authKey = conf.AuthKey
 	savingPath = conf.SavingDir + conf.FileName
 }
 
