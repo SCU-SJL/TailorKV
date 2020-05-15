@@ -26,18 +26,60 @@ const (
 	quit
 )
 
-func HandleConn(conn net.Conn, cache *tailor.Cache, savingDir, defaultSavingPath string, maxSizeOfDatagram int) {
+var (
+	authRequired bool
+	authPassword string
+	authPassed   bool
+)
+
+func sendAuthMsg(conn net.Conn) {
+	if authRequired && !authPassed {
+		_, _ = conn.Write([]byte{1})
+	} else {
+		_, _ = conn.Write([]byte{0})
+	}
+}
+
+func doAuth(conn net.Conn) bool {
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		return false
+	}
+	return string(buf[:n]) == authPassword
+}
+
+func HandleConn(conn net.Conn, cache *tailor.Cache, savingDir, defaultSavingPath string, maxSizeOfDatagram int, needAuth bool, authKey string) {
+	defer conn.Close()
+	authRequired = needAuth
+	authPassword = authKey
+	authPassed = !needAuth
+	sendAuthMsg(conn)
+	if authRequired {
+		authPassed = doAuth(conn)
+	}
+	if !authPassed {
+		_, _ = conn.Write([]byte{1})
+		return
+	}
+	_, err := conn.Write([]byte{0})
+	if err != nil {
+		return
+	}
+
 	defer func() {
 		kvs, _ := cache.Keys("[A-z]+")
 		for i := range kvs {
 			fmt.Printf("key: %s, val: %v\n", kvs[i].Key(), kvs[i].Val())
 		}
 	}()
+
 	for {
 		datagram, err := readDatagram(conn, maxSizeOfDatagram)
 		if err != nil {
 			break
 		}
+
 		switch datagram.Op {
 		case setex:
 			doSetex(cache, datagram, conn)
