@@ -1,4 +1,10 @@
 <config>
+    <!--    choose if tailor server needs auth-->
+    <auth>true</auth>
+
+    <!--    password for auth-->
+    <authKey>123456</authKey>
+
     <!--    max size of datagram (bytes). -->
     <!--    a datagram consists of command id, key, val and expiration-->
     <!--    you should make sure the params (especially key and val) won't exceed the length limit-->
