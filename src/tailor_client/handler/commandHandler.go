@@ -41,6 +41,34 @@ type Command struct {
 }
 
 func HandleConn(conn net.Conn, ipAddr *string) {
+	ok, err := authorized(conn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !ok {
+		fmt.Print("Enter the password: ")
+		var password string
+		_, err = fmt.Scanln(&password)
+		for err != nil {
+			fmt.Println("invalid input")
+			fmt.Print("Enter again: ")
+			_, err = fmt.Scanln(&password)
+		}
+		_, err = conn.Write([]byte(password))
+		if err != nil {
+			log.Fatal(err)
+		}
+		resp := make([]byte, 1)
+		_, err = conn.Read(resp)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if resp[0] != 0 {
+			fmt.Println("Wrong password")
+			return
+		}
+	}
+
 	for {
 		fmt.Print(*ipAddr + ":8448-->:")
 		command, err := readCommand()
@@ -259,7 +287,7 @@ func readCommand() (*Command, error) {
 
 func checkOp(op string) error {
 	switch op {
-	case "set", "setex", "setnx",
+	case "set", "setex", "setnx", "auth",
 		"get", "del", "unlink", "incr", "incrby",
 		"ttl", "keys", "cnt", "save", "load", "cls", "exit", "quit":
 		return nil
@@ -275,7 +303,7 @@ func checkCommand(op string, size int) error {
 		if size != 0 {
 			return lenErr
 		}
-	case "get", "del", "unlink", "incr", "ttl", "keys":
+	case "get", "del", "unlink", "incr", "ttl", "keys", "auth":
 		if size != 1 {
 			return lenErr
 		}
@@ -298,6 +326,8 @@ func checkCommand(op string, size int) error {
 func printUsage(op string) {
 	fmt.Print("USAGE: ")
 	switch op {
+	case "auth":
+		fmt.Println("auth [password]")
 	case "cnt", "cls", "exit", "quit":
 		fmt.Printf("%s\n", op)
 	case "get", "del", "unlink", "incr", "ttl":
@@ -314,4 +344,16 @@ func printUsage(op string) {
 		fmt.Printf("\n%s ## use default filepath\n", op)
 		fmt.Printf("%s [filename]  ## use the given filename(doesn't change the Dir)\n", op)
 	}
+}
+
+func authorized(conn net.Conn) (bool, error) {
+	buf := make([]byte, 1)
+	_, err := conn.Read(buf)
+	if err != nil {
+		return false, err
+	}
+	if buf[0] == 0 {
+		return true, nil
+	}
+	return false, nil
 }
