@@ -79,121 +79,171 @@ func HandleConn(conn net.Conn, ipAddr *string) {
 		}
 		switch command.op {
 		case "set":
-			sendDatagram(conn, set, command)
-			printErrMsg(conn)
+			handleCommandWithOneParam(conn, set, command)
 		case "setex":
-			sendDatagram(conn, setex, command)
-			printErrMsg(conn)
+			handleCommandWithOneParam(conn, setex, command)
 		case "setnx":
-			sendDatagram(conn, setnx, command)
-			printErrMsg(conn)
+			handleCommandWithOneParam(conn, setnx, command)
 		case "get":
-			sendDatagram(conn, get, command)
-			msg := make([]byte, 1)
-			_, err := conn.Read(msg)
+			res, err := handleGet(conn, command)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			if msg[0] != 0 {
-				fmt.Println(errType[msg[0]])
-				continue
-			}
-			val := make([]byte, 4096)
-			n, err := conn.Read(val)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			fmt.Println(string(val[:n]))
+			fmt.Println(res)
 		case "del":
-			sendDatagram(conn, del, command)
-			printErrMsg(conn)
+			handleCommandWithOneParam(conn, del, command)
 		case "unlink":
-			sendDatagram(conn, unlink, command)
-			printErrMsg(conn)
+			handleCommandWithOneParam(conn, unlink, command)
 		case "incr":
-			sendDatagram(conn, incr, command)
-			printErrMsg(conn)
+			handleCommandWithOneParam(conn, incr, command)
 		case "incrby":
-			sendDatagram(conn, incrby, command)
-			printErrMsg(conn)
+			handleCommandWithOneParam(conn, incrby, command)
 		case "ttl":
-			sendDatagram(conn, ttl, command)
-			msg := make([]byte, 1)
-			_, err := conn.Read(msg)
+			res, err := handleTtl(conn, command)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			if msg[0] != 0 {
-				fmt.Print(errType[msg[0]])
-			}
-			val := make([]byte, 128)
-			n, err := conn.Read(val)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			fmt.Println(string(val[:n]))
+			fmt.Println(res)
 		case "keys":
-			sendDatagram(conn, keys, command)
-			msg := make([]byte, 1)
-			_, err := conn.Read(msg)
+			err := handleKeys(conn, command)
 			if err != nil {
 				fmt.Println(err)
-				continue
-			}
-			if msg[0] != 0 {
-				printErrMsg(conn)
-				continue
-			}
-
-			buf := make([]byte, 1024*1024)
-			n, err := conn.Read(buf)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			arr, err := protocol.GetKeys(buf[:n])
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			for _, k := range arr {
-				fmt.Println(k)
 			}
 		case "cnt":
-			sendDatagram(conn, cnt, command)
-			msg := make([]byte, 1)
-			_, err := conn.Read(msg)
+			res, err := handleCnt(conn, command)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			count := make([]byte, 64)
-			n, err := conn.Read(count)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			fmt.Println(string(count[:n]))
+			fmt.Println(res)
 		case "save":
-			sendDatagram(conn, save, command)
-			fmt.Print("NeCache: ")
-			printErrMsg(conn)
-			fmt.Print("ExCache: ")
-			printErrMsg(conn)
+			err := handleSave(conn, command)
+			if err != nil {
+				fmt.Println(err)
+			}
 		case "load":
-			sendDatagram(conn, load, command)
-			printErrMsg(conn)
+			err := handleCommandWithNoResp(conn, load, command, true)
+			if err != nil {
+				fmt.Println(err)
+			}
 		case "cls":
-			sendDatagram(conn, cls, command)
-			printErrMsg(conn)
+			err := handleCommandWithNoResp(conn, cls, command, true)
+			if err != nil {
+				fmt.Println(err)
+			}
 		case "exit", "quit":
-			sendDatagram(conn, exit, command)
+			_ = handleCommandWithNoResp(conn, exit, command, false)
 			return
 		}
+	}
+}
+
+func handleGet(conn net.Conn, command *Command) (string, error) {
+	sendDatagram(conn, get, command)
+	msg := make([]byte, 1)
+	_, err := conn.Read(msg)
+	if err != nil {
+		return "", err
+	}
+	if msg[0] != 0 {
+		return "", errors.New(errType[msg[0]])
+	}
+	val := make([]byte, 4096)
+	n, err := conn.Read(val)
+	if err != nil {
+		return "", err
+	}
+	return string(val[:n]), nil
+}
+
+func handleTtl(conn net.Conn, command *Command) (string, error) {
+	sendDatagram(conn, ttl, command)
+	msg := make([]byte, 1)
+	_, err := conn.Read(msg)
+	if err != nil {
+		return "", err
+	}
+	if msg[0] != 0 {
+		fmt.Print(errType[msg[0]])
+	}
+	val := make([]byte, 128)
+	n, err := conn.Read(val)
+	if err != nil {
+		return "", err
+	}
+	return string(val[:n]), nil
+}
+
+func handleKeys(conn net.Conn, command *Command) error {
+	sendDatagram(conn, keys, command)
+	msg := make([]byte, 1)
+	_, err := conn.Read(msg)
+	if err != nil {
+		return err
+	}
+	if msg[0] != 0 {
+		err = printErrMsg(conn)
+		return err
+	}
+
+	buf := make([]byte, 1024*1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		return err
+	}
+	arr, err := protocol.GetKeys(buf[:n])
+	if err != nil {
+		return err
+	}
+	for _, k := range arr {
+		fmt.Println(k)
+	}
+	return nil
+}
+
+func handleCnt(conn net.Conn, command *Command) (string, error) {
+	sendDatagram(conn, cnt, command)
+	msg := make([]byte, 1)
+	_, err := conn.Read(msg)
+	if err != nil {
+		return "", err
+	}
+	count := make([]byte, 64)
+	n, err := conn.Read(count)
+	if err != nil {
+		return "", err
+	}
+	return string(count[:n]), nil
+}
+
+func handleSave(conn net.Conn, command *Command) error {
+	sendDatagram(conn, save, command)
+	fmt.Print("NeCache: ")
+	err := printErrMsg(conn)
+	if err != nil {
+		return err
+	}
+	fmt.Print("ExCache: ")
+	err = printErrMsg(conn)
+	return err
+}
+
+func handleCommandWithNoResp(conn net.Conn, op byte, command *Command, printErr bool) error {
+	sendDatagram(conn, op, command)
+	if printErr {
+		err := printErrMsg(conn)
+		return err
+	}
+	return nil
+}
+
+func handleCommandWithOneParam(conn net.Conn, op byte, command *Command) {
+	sendDatagram(conn, op, command)
+	err := printErrMsg(conn)
+	if err != nil {
+		fmt.Println(err)
 	}
 }
 
@@ -211,18 +261,18 @@ func sendDatagram(conn net.Conn, op byte, command *Command) {
 	}
 }
 
-func printErrMsg(conn net.Conn) {
+func printErrMsg(conn net.Conn) error {
 	errMsg := make([]byte, 64)
 	n, err := conn.Read(errMsg)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	if n == 1 {
 		fmt.Println(errType[errMsg[0]])
 	} else {
 		fmt.Printf("errMsg: %s\n", errMsg[:n])
 	}
+	return nil
 }
 
 func readCommand() (*Command, error) {
