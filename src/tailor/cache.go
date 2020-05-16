@@ -75,11 +75,12 @@ func newCache(de, asyncCycle time.Duration, m map[string]Item) *cache {
 	}
 
 	asyncDelFunc := func(c *cache) {
+		if c.asyncQueue.IsEmpty() {
+			return
+		}
 		unlinkedKey, err := c.asyncQueue.Poll()
 		if err == nil {
 			c.del(unlinkedKey.(string))
-		} else {
-			time.Sleep(1 * time.Second)
 		}
 	}
 	asyncCl := newCleanerWithHandler(asyncCycle, asyncDelFunc)
