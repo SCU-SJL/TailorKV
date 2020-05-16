@@ -18,6 +18,10 @@ type LinkedList struct {
 	mu   sync.RWMutex
 }
 
+func (list *LinkedList) IsEmpty() bool {
+	return list.Size() == 0
+}
+
 func (list *LinkedList) Size() int {
 	list.mu.RLock()
 	defer list.mu.RUnlock()
@@ -103,8 +107,12 @@ func (list *LinkedList) RemoveFirst() (interface{}, error) {
 	if err := list.illegalIndexCheck(0); err != nil {
 		return nil, err
 	}
+
 	res := list.head
-	list.head = list.head.next
+	if list.head == list.tail {
+		list.tail = nil
+	}
+	list.head = res.next
 	if list.head != nil {
 		list.head.prev = nil
 	}
@@ -119,6 +127,9 @@ func (list *LinkedList) RemoveLast() (interface{}, error) {
 		return nil, err
 	}
 	res := list.tail
+	if list.tail == list.head {
+		list.head = nil
+	}
 	list.tail = res.prev
 	if list.tail != nil {
 		list.tail.next = nil
