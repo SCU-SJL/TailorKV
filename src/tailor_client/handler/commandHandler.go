@@ -41,32 +41,9 @@ type Command struct {
 }
 
 func HandleConn(conn net.Conn, ipAddr *string) {
-	ok, err := authorized(conn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if !ok {
-		fmt.Print("Enter the password: ")
-		var password string
-		_, err = fmt.Scanln(&password)
-		for err != nil {
-			fmt.Println("invalid input")
-			fmt.Print("Enter again: ")
-			_, err = fmt.Scanln(&password)
-		}
-		_, err = conn.Write([]byte(password))
-		if err != nil {
-			log.Fatal(err)
-		}
-		resp := make([]byte, 1)
-		_, err = conn.Read(resp)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if resp[0] != 0 {
-			fmt.Println("Wrong password")
-			return
-		}
+	authErr := auth(conn)
+	if authErr != nil {
+		log.Fatal(authErr)
 	}
 
 	for {
@@ -394,16 +371,4 @@ func printUsage(op string) {
 		fmt.Printf("\n%s ## use default filepath\n", op)
 		fmt.Printf("%s [filename]  ## use the given filename(doesn't change the Dir)\n", op)
 	}
-}
-
-func authorized(conn net.Conn) (bool, error) {
-	buf := make([]byte, 1)
-	_, err := conn.Read(buf)
-	if err != nil {
-		return false, err
-	}
-	if buf[0] == 0 {
-		return true, nil
-	}
-	return false, nil
 }
