@@ -26,39 +26,16 @@ const (
 	quit
 )
 
-var (
-	authRequired bool
-	authPassword string
-	authPassed   bool
-)
-
-func sendAuthMsg(conn net.Conn) {
-	if authRequired && !authPassed {
-		_, _ = conn.Write([]byte{1})
-	} else {
-		_, _ = conn.Write([]byte{0})
-	}
+type AESLogin struct {
+	AuthRequired bool
+	AuthPassword string
+	AESKey       string
+	AuthPassed   bool
 }
 
-func doAuth(conn net.Conn) bool {
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		return false
-	}
-	return string(buf[:n]) == authPassword
-}
-
-func HandleConn(conn net.Conn, cache *tailor.Cache, savingDir, defaultSavingPath string, maxSizeOfDatagram int, needAuth bool, authKey string) {
+func HandleConn(conn net.Conn, cache *tailor.Cache, savingDir, defaultSavingPath string, maxSizeOfDatagram int, login *AESLogin) {
 	defer conn.Close()
-	authRequired = needAuth
-	authPassword = authKey
-	authPassed = !needAuth
-	sendAuthMsg(conn)
-	if authRequired {
-		authPassed = doAuth(conn)
-	}
-	if !authPassed {
+	if loginErr := auth(conn, login); loginErr != nil {
 		_, _ = conn.Write([]byte{1})
 		return
 	}
