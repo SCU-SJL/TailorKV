@@ -17,7 +17,8 @@ type TailorConfig struct {
 	SavingDir         string   `xml:"savingDir"`
 	FileName          string   `xml:"fileName"`
 	Auth              string   `xml:"auth"`
-	AuthKey           string   `xml:"authKey"`
+	Password          string   `xml:"password"`
+	AESKey            string   `xml:"AESKey"`
 }
 
 func GetConfig(path string) *TailorConfig {

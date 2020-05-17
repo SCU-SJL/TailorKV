@@ -21,13 +21,20 @@ var (
 	concurrency       uint8
 	savingPath        string
 	auth              bool
-	authKey           string
+	password          string
+	aesKey            string
 )
 
 func main() {
 	// read configuration
 	conf := config.GetConfig(".." + string(os.PathSeparator) + "resource" + string(os.PathSeparator) + "config.xml")
 	resolveConfig(*conf)
+	login := &handler.AESLogin{
+		AuthRequired: auth,
+		AuthPassword: password,
+		AESKey:       aesKey,
+		AuthPassed:   false,
+	}
 
 	// start tailor
 	cache := tailor.NewCache(defaultExpiration, cleanCycle, asyncCleanCycle, concurrency, nil)
@@ -43,7 +50,7 @@ func main() {
 			cache.Save(savingPath, nil)
 			log.Fatal(err)
 		}
-		go handler.HandleConn(conn, cache, conf.SavingDir, savingPath, maxSizeOfDatagram, auth, authKey)
+		go handler.HandleConn(conn, cache, conf.SavingDir, savingPath, maxSizeOfDatagram, login)
 	}
 }
 
@@ -87,7 +94,8 @@ func resolveConfig(conf config.TailorConfig) {
 	} else {
 		log.Fatal(errors.New("value of 'auth' in config.xml is invalid"))
 	}
-	authKey = conf.AuthKey
+	password = conf.Password
+	aesKey = conf.AESKey
 	savingPath = conf.SavingDir + conf.FileName
 }
 
