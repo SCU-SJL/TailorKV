@@ -3,7 +3,12 @@
     <auth>true</auth>
 
     <!--    password for auth-->
-    <authKey>123456</authKey>
+    <!--    max size of password is 1024 bytes-->
+    <password>123456</password>
+
+    <!--    AES private key-->
+    <!--    length of AES private key must be a multiple of 8-->
+    <AESKey>SJL *loves* ZHH-</AESKey>
 
     <!--    max size of datagram (bytes). -->
     <!--    a datagram consists of command id, key, val and expiration-->
