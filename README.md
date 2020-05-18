@@ -2,7 +2,7 @@
 A lightweight and customized KV cache.  
 ### How to use?
 + ##### Get server && client && config.xml of TailorKV.  
-  + You can find them in /bin in master
+  + You can find ser & cli in /bin in master and config.xml is in /resource
   + Or find them in the ```latest release```  
   + Or you can clone this repo and use ```go build src/tailor_server/tailorServer.go``` and ```go build src/tailor_client/tailorCli.go```  
 + ##### Create directory like this
