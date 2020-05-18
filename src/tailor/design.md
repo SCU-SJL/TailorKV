@@ -1,8 +1,8 @@
-### TailorKV v0.3.0
+### TailorKV v1.0.0
 + #### New feature
   + build tailor server
   + build tailor client
-  + improve tailor SDK
+  + improve tailor performance
   + ...
   
 + #### Possible feature in the future
