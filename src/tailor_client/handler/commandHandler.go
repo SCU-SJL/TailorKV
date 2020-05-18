@@ -41,6 +41,7 @@ type Command struct {
 }
 
 func HandleConn(conn net.Conn, ipAddr *string) {
+	defer conn.Close()
 	authErr := auth(conn)
 	if authErr != nil {
 		log.Fatal(authErr)
