@@ -1,6 +1,6 @@
 <config>
     <!--    decide if tailor server needs auth-->
-    <auth>true</auth>
+    <auth>false</auth>
 
     <!--    password for auth-->
     <!--    max size of password is 1024 bytes-->
