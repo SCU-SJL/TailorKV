@@ -20,12 +20,16 @@ func doAuth(conn net.Conn, login *AESLogin) bool {
 }
 
 func auth(conn net.Conn, login *AESLogin) error {
-	if login.AuthRequired {
-		_, err := conn.Write([]byte{1})
-		if err != nil {
-			return nil
-		}
+	if !login.AuthRequired {
+		_, err := conn.Write([]byte{0})
+		return err
 	}
+
+	_, err := conn.Write([]byte{1})
+	if err != nil {
+		return nil
+	}
+
 	login.AuthPassed = doAuth(conn, login)
 	if !login.AuthPassed {
 		return errors.New("password is wrong")

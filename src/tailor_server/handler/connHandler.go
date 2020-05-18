@@ -39,10 +39,6 @@ func HandleConn(conn net.Conn, cache *tailor.Cache, savingDir, defaultSavingPath
 		_, _ = conn.Write([]byte{1})
 		return
 	}
-	_, err := conn.Write([]byte{0})
-	if err != nil {
-		return
-	}
 
 	defer func() {
 		kvs, _ := cache.Keys("[A-z]+")
