@@ -1,5 +1,5 @@
 <config>
-    <!--    choose if tailor server needs auth-->
+    <!--    decide if tailor server needs auth-->
     <auth>true</auth>
 
     <!--    password for auth-->
@@ -7,7 +7,8 @@
     <password>123456</password>
 
     <!--    AES private key-->
-    <!--    length of AES private key must be a multiple of 8-->
+    <!--    length of AES private key must be-->
+    <!--    either 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.-->
     <AESKey>SJL *loves* ZHH-</AESKey>
 
     <!--    max size of datagram (bytes). -->
@@ -15,7 +16,8 @@
     <!--    you should make sure the params (especially key and val) won't exceed the length limit-->
     <maxSizeOfDatagram>4096</maxSizeOfDatagram>
 
-    <!--    negative numbers represent no expiration (millisecond)-->
+    <!--    default expiration of tailorKV (millisecond)-->
+    <!--    negative numbers represent no expiration-->
     <defaultExpiration>-1</defaultExpiration>
 
     <!--    clean up cycle of the daemon cleaner which cleans the expired data (millisecond)-->
