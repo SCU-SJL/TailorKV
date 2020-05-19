@@ -1,4 +1,7 @@
 <config>
+    <!--    port of tcp-->
+    <port>8448</port>
+
     <!--    decide if tailor server needs auth-->
     <auth>false</auth>
 
