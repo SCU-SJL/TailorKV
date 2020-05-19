@@ -23,6 +23,7 @@ var (
 	auth              bool
 	password          string
 	aesKey            string
+	port              string
 )
 
 func main() {
@@ -40,7 +41,7 @@ func main() {
 	cache := tailor.NewCache(defaultExpiration, cleanCycle, asyncCleanCycle, concurrency, nil)
 
 	// start server
-	listener, err := net.Listen("tcp", "0.0.0.0:8448")
+	listener, err := net.Listen("tcp", "0.0.0.0:"+port)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,6 +95,7 @@ func resolveConfig(conf config.TailorConfig) {
 	} else {
 		log.Fatal(errors.New("value of 'auth' in config.xml is invalid"))
 	}
+	port = conf.Port
 	password = conf.Password
 	aesKey = conf.AESKey
 	savingPath = conf.SavingDir + conf.FileName

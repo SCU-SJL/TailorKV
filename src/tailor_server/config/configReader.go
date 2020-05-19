@@ -19,6 +19,7 @@ type TailorConfig struct {
 	Auth              string   `xml:"auth"`
 	Password          string   `xml:"password"`
 	AESKey            string   `xml:"AESKey"`
+	Port              string   `xml:"port"`
 }
 
 func GetConfig(path string) *TailorConfig {
