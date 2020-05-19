@@ -8,10 +8,11 @@ import (
 )
 
 var ipAddr = flag.String("ip", "localhost", "ip address of host")
+var port = flag.String("p", "8448", "port number")
 
 func main() {
 	flag.Parse()
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", *ipAddr+":8448")
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", *ipAddr+":"+*port)
 	if err != nil {
 		log.Fatal(err)
 	}
