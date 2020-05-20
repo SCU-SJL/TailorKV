@@ -15,8 +15,8 @@ func doAuth(conn net.Conn, login *AESLogin) bool {
 		return false
 	}
 	encrypted := string(buf[:n])
-	decrypted := AesDecrypt(encrypted, login.AESKey)
-	return login.AuthPassword == decrypted
+	decrypted, err := AesDecrypt(encrypted, login.AESKey)
+	return err == nil && login.AuthPassword == decrypted
 }
 
 func auth(conn net.Conn, login *AESLogin) error {
@@ -27,17 +27,19 @@ func auth(conn net.Conn, login *AESLogin) error {
 
 	_, err := conn.Write([]byte{1})
 	if err != nil {
-		return nil
+		return err
 	}
 
 	login.AuthPassed = doAuth(conn, login)
 	if !login.AuthPassed {
+		_, _ = conn.Write([]byte{1})
 		return errors.New("password is wrong")
 	}
-	return nil
+	_, err = conn.Write([]byte{0})
+	return err
 }
 
-func AesDecrypt(encrypted string, key string) string {
+func AesDecrypt(encrypted string, key string) (string, error) {
 	encryptedByte, _ := base64.StdEncoding.DecodeString(encrypted)
 	k := []byte(key)
 
@@ -46,13 +48,16 @@ func AesDecrypt(encrypted string, key string) string {
 	blockMode := cipher.NewCBCDecrypter(block, k[:blockSize])
 	orig := make([]byte, len(encryptedByte))
 	blockMode.CryptBlocks(orig, encryptedByte)
-	orig = PKCS7UnPadding(orig)
+	orig, err := PKCS7UnPadding(orig)
 
-	return string(orig)
+	return string(orig), err
 }
 
-func PKCS7UnPadding(origData []byte) []byte {
+func PKCS7UnPadding(origData []byte) ([]byte, error) {
 	length := len(origData)
 	padLen := int(origData[length-1])
-	return origData[:(length - padLen)]
+	if length < padLen {
+		return nil, errors.New("padding length is wrong")
+	}
+	return origData[:(length - padLen)], nil
 }
