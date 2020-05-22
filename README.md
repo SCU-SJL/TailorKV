@@ -4,7 +4,8 @@ A lightweight and customized KV cache.
 + ##### Get server && client && config.xml of TailorKV.  
   + You can find ser & cli in /bin and config.xml is in /resource in this branch.
   + Or find them in the ```latest release```  .
-  + Or you can clone this repo and use ```go build src/tailor_server/tailorServer.go``` and ```go build src/tailor_client/tailorCli.go```.  
+  + Or you can clone this repo and use ```go build src/tailor_server/tailorServer.go``` and ```go build src/tailor_client/tailorCli.go```.
+  + Or you may want to build executable program for linux in Windows, then use ```CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ...```  
 + ##### Create directory like this
   + ┏ /bin
   + ┃ &nbsp;&nbsp;&nbsp;┗ tailorServer.exe
