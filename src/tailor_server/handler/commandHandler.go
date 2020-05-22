@@ -103,6 +103,7 @@ func doTtl(cache *tailor.Cache, datagram *protocol.Protocol, conn net.Conn) {
 	ttl, ok := cache.Ttl(key)
 	if !ok {
 		_, _ = conn.Write([]byte{NotFound})
+		return
 	}
 	_, _ = conn.Write([]byte{Success})
 	_, _ = conn.Write([]byte(ttl.String()))
