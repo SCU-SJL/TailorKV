@@ -144,7 +144,7 @@ func handleTtl(conn net.Conn, command *Command) (string, error) {
 		return "", err
 	}
 	if msg[0] != 0 {
-		fmt.Print(errType[msg[0]])
+		return "", errors.New(errType[msg[0]])
 	}
 	val := make([]byte, 128)
 	n, err := conn.Read(val)
