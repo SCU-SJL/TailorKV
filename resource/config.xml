@@ -3,7 +3,7 @@
     <port>8448</port>
 
     <!--    decide if tailor server needs auth-->
-    <auth>false</auth>
+    <auth>true</auth>
 
     <!--    password for auth-->
     <!--    max size of password is 1024 bytes-->
