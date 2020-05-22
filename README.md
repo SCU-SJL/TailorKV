@@ -14,8 +14,8 @@ A lightweight and customized KV cache.
 + ##### Start the server of TailorKV
   + ./tailorServer
 + ##### Use cli of TailorKV to connect TailorKV server
-  + ./tailorCli -ip ``ip addr of server``
-  + Such as ./tailorCli -ip 127.0.0.1
+  + ./tailorCli -ip ```ip addr of server``` -p ```port```
+  + Such as ./tailorCli -ip 127.0.0.1 -p 8448
 + ##### Use instruction to control the TailorKV server 
   + ```set   [key] [val]```
   + ```setex [key] [val] [expiration]``` (expiration is millisecond)
