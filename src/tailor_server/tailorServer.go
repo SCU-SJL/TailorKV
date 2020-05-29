@@ -49,7 +49,6 @@ func main() {
 		conn, err := listener.Accept()
 		if err != nil {
 			cache.Save(savingPath, nil)
-			log.Fatal(err)
 		}
 		go handler.HandleConn(conn, cache, conf.SavingDir, savingPath, maxSizeOfDatagram, login)
 	}
