@@ -1,10 +1,10 @@
 package main
 
 import (
+	"TailorKV/src/tailor_client/handler"
 	"flag"
 	"log"
 	"net"
-	"tailor_client/handler"
 )
 
 var ipAddr = flag.String("ip", "localhost", "ip address of host")

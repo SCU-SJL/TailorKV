@@ -1,8 +1,8 @@
 package protocol
 
 import (
+	"TailorKV/src/tailor"
 	"encoding/json"
-	"tailor"
 )
 
 type Protocol struct {

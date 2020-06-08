@@ -1,15 +1,15 @@
 package main
 
 import (
+	"TailorKV/src/tailor"
+	"TailorKV/src/tailor_server/config"
+	"TailorKV/src/tailor_server/handler"
 	"errors"
 	"log"
 	"net"
 	"os"
 	"runtime"
 	"strconv"
-	"tailor"
-	"tailor_server/config"
-	"tailor_server/handler"
 	"time"
 )
 

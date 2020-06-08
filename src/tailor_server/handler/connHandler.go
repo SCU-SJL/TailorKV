@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"TailorKV/src/protocol"
+	"TailorKV/src/tailor"
 	"fmt"
 	"net"
-	"protocol"
-	"tailor"
 )
 
 const (
