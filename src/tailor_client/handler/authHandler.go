@@ -1,17 +1,15 @@
 package handler
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/howeyc/gopass"
 	"log"
 	"net"
-	"os"
-	"strings"
 )
 
 func auth(conn net.Conn) error {
@@ -43,20 +41,16 @@ func auth(conn net.Conn) error {
 }
 
 func readAuth(param string) string {
-	in := bufio.NewReader(os.Stdin)
-
 	fmt.Printf("Enter the %s: ", param)
 
-	input, err := in.ReadString('\n')
+	input, err := gopass.GetPasswdMasked()
 
 	for err != nil {
 		fmt.Println("invalid input")
 		fmt.Printf("Enter %s again: ", param)
-		input, err = in.ReadString('\n')
+		input, err = gopass.GetPasswdMasked()
 	}
-	input = strings.Replace(input, "\r\n", "", -1)
-	input = strings.Replace(input, "\n", "", -1)
-	return input
+	return string(input)
 }
 
 func authorized(conn net.Conn) (bool, error) {
