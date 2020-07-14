@@ -40,15 +40,15 @@ type Command struct {
 	exp string
 }
 
-func HandleConn(conn net.Conn, ipAddr *string) {
+func HandleConn(conn net.Conn, ipAddr, port *string) {
 	defer conn.Close()
 	authErr := auth(conn)
 	if authErr != nil {
 		log.Fatal(authErr)
 	}
-
+	lineHeader := *ipAddr + ":" + *port + "-->:"
 	for {
-		fmt.Print(*ipAddr + ":8448-->:")
+		fmt.Print(lineHeader)
 		command, err := readCommand()
 		if err != nil {
 			fmt.Println(err)
@@ -240,7 +240,7 @@ func sendDatagram(conn net.Conn, op byte, command *Command) {
 }
 
 func printErrMsg(conn net.Conn) error {
-	errMsg := make([]byte, 64)
+	errMsg := make([]byte, 128)
 	n, err := conn.Read(errMsg)
 	if err != nil {
 		return err
