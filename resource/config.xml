@@ -33,7 +33,7 @@
     <concurrency>default</concurrency>
 
     <!--    dir to save persistent files, please use absolute URL-->
-    <savingDir>/Users/bytedance/Projects/Github</savingDir>
+    <savingDir>/Users/bytedance/Projects/Github/</savingDir>
 
     <!--    name of the persistent files-->
     <fileName>tailorBackUp.tkv</fileName>
